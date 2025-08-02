@@ -5,3 +5,4 @@ edition = "2024.beta"
 
 [addresses]
 sui_escrow_factory = "0x0" 
+token = "0x0"

@@ -2,12 +2,15 @@ module sui_escrow_factory::escrow_factory {
     use sui::object::{UID};
     use sui::transfer;
     use sui::tx_context::{Self, TxContext};
-    use sui::coin::{Self, Coin};
+    use sui::coin::{Self, Coin, put, take};
     use sui::hash::{Self, keccak256};
     use sui::event;
     use sui::clock::{Clock};
     use std::vector;
     use sui::sui::SUI;
+    use sui::balance::{Self, Balance, zero};
+
+    use token::my_coin::{Self, MY_COIN};
 
     // ===== Errors =====
     const EInvalidSecret: u64 = 0;
@@ -29,6 +32,8 @@ module sui_escrow_factory::escrow_factory {
         deployed_at: u64,
         is_withdrawn: bool,
         is_cancelled: bool,
+        sui_balance: Balance<SUI>,
+        myc_balance: Balance<MY_COIN>,
     }
 
     /// Escrow factory that manages escrow deployments
@@ -95,10 +100,11 @@ module sui_escrow_factory::escrow_factory {
         amount: u64,
         safety_deposit: u64,
         time_locks: vector<u8>,
-        // payment: Coin<SUI>,
+        payment: Coin<SUI>,
+        deposit_token: Coin<MY_COIN>,
         ctx: &mut TxContext
     ) {
-        let escrow = Escrow {
+        let mut escrow = Escrow {
             id: object::new(ctx),
             order_hash,
             hash_lock,
@@ -111,6 +117,8 @@ module sui_escrow_factory::escrow_factory {
             deployed_at: tx_context::epoch(ctx),
             is_withdrawn: false,
             is_cancelled: false,
+            sui_balance: zero<SUI>(),
+            myc_balance: zero<MY_COIN>(),
         };
 
         factory.escrow_count = factory.escrow_count + 1;
@@ -124,18 +132,30 @@ module sui_escrow_factory::escrow_factory {
             amount: escrow.amount,
             deployed_at: escrow.deployed_at,
         });
+
+        // Deposit safe deposit and payment
+        {
+            let mut p = payment;
+            let pay = coin::split<SUI>(&mut p, amount, ctx);
+            coin::put<SUI>(&mut escrow.sui_balance, pay);
+            transfer::public_transfer(p, tx_context::sender(ctx)); // change back
+        
+        
+            let mut d = deposit_token;
+            let dep = coin::split<MY_COIN>(&mut d, safety_deposit, ctx);
+            coin::put<MY_COIN>(&mut escrow.myc_balance, dep);
+            transfer::public_transfer(d, tx_context::sender(ctx)); // change back
+        };
         
         // Share the escrow object
         transfer::share_object(escrow);
-        
-
     }
 
     /// Withdraw funds from escrow using secret
     public entry fun withdraw(
-        mut escrow: Escrow,
+        escrow: &mut Escrow,
         secret: vector<u8>,
-        _ctx: &mut TxContext
+        ctx: &mut TxContext
     ) {
         // Check if already withdrawn or cancelled
         assert!(!escrow.is_withdrawn, EInvalidSecret);
@@ -148,6 +168,8 @@ module sui_escrow_factory::escrow_factory {
         // Mark as withdrawn
         escrow.is_withdrawn = true;
 
+        retrieve_escrow_funds(escrow, ctx);
+
         event::emit(EscrowWithdrawn {
             order_hash: escrow.order_hash,
             escrow_id: escrow.id.to_address(),
@@ -156,13 +178,13 @@ module sui_escrow_factory::escrow_factory {
         });
         
         // Delete escrow after withdrawal
-        let Escrow { id, .. } = escrow;
-        object::delete(id);
+        // let Escrow { id, .. } = escrow;
+        // object::delete(id);
     }
 
     /// Cancel escrow (only maker can cancel)
     public entry fun cancel_escrow(
-        mut escrow: Escrow,
+        escrow: &mut Escrow,
         clock: &Clock,
         ctx: &mut TxContext
     ) {
@@ -177,10 +199,29 @@ module sui_escrow_factory::escrow_factory {
             maker: escrow.maker,
             amount: escrow.amount,
         });
+
+        retrieve_escrow_funds(escrow, ctx);
         
         // Delete escrow after cancellation
-        let Escrow { id, .. } = escrow;
-        object::delete(id);
+        // let Escrow { id, .. } = escrow;
+        // object::delete(id);
+    }
+
+    fun retrieve_escrow_funds(
+        escrow: &mut Escrow,
+        ctx: &mut TxContext
+    ) {
+                let sui_amt = balance::value<SUI>(&escrow.sui_balance);
+        let myc_amt = balance::value<MY_COIN>(&escrow.myc_balance);
+
+        if (sui_amt > 0) {
+            let coin_out = take<SUI>(&mut escrow.sui_balance, sui_amt, ctx);
+            transfer::public_transfer(coin_out, tx_context::sender(ctx));
+        };
+        if (myc_amt > 0) {
+            let coin_out2 = take<MY_COIN>(&mut escrow.myc_balance, myc_amt, ctx);
+            transfer::public_transfer(coin_out2, tx_context::sender(ctx));
+        };
     }
 
     /// Get escrow count
@@ -203,5 +244,20 @@ module sui_escrow_factory::escrow_factory {
             escrow.is_withdrawn,
             escrow.is_cancelled
         )
+    }
+
+    public fun send_amount_generic<T>(
+        mut c: Coin<T>,
+        to: address,
+        amount: u64,
+        ctx: &mut TxContext
+    ) {
+        assert!(amount > 0, 1);
+        assert!(amount <= coin::value(&c), 2);
+
+        let pay = coin::split<T>(&mut c, amount, ctx);
+
+        transfer::public_transfer(pay, to);
+        transfer::public_transfer(c, tx_context::sender(ctx));
     }
 } 
