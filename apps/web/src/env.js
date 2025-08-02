@@ -8,7 +8,7 @@ export const env = createEnv({
    */
   server: {
     NODE_ENV: z.enum(["development", "test", "production"]),
-    DATABASE_URL: z.string(),
+    POSTGRES_URL: z.string(),
   },
 
   /**
@@ -26,7 +26,7 @@ export const env = createEnv({
    */
   runtimeEnv: {
     NODE_ENV: process.env.NODE_ENV,
-    DATABASE_URL: process.env.DATABASE_URL,
+    POSTGRES_URL: process.env.POSTGRES_URL,
     NEXT_PUBLIC_REOWN_PROJECT_ID: process.env.NEXT_PUBLIC_REOWN_PROJECT_ID,
   },
   /**
