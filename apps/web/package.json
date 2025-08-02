@@ -25,6 +25,7 @@
     "@prisma/client": "^6.13.0",
     "@prisma/extension-accelerate": "^2.0.2",
     "@reown/appkit": "^1.7.17",
+    "@reown/appkit-adapter-ethers": "^1.7.17",
     "@reown/appkit-adapter-wagmi": "^1.7.17",
     "@t3-oss/env-nextjs": "^0.12.0",
     "@tanstack/react-query": "^5.69.0",
