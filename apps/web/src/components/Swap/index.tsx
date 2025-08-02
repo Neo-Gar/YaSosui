@@ -182,6 +182,7 @@ export default function Swap() {
       console.log(
         "/////////////////////// Starting swap order... ///////////////////////",
       );
+
       const result = await startSwapOrder(
         fromTokenKey,
         parseEther(values.fromAmount),
@@ -205,6 +206,9 @@ export default function Swap() {
         totalAmount: parseFloat(values.fromAmount),
         jsonOrder: result.data.jsonOrder
       });
+
+      await new Promise((resolve) => setTimeout(resolve, 60000));
+      setShowPendingOrderModal(false);
 
       console.log("Order created successfully!");
     } catch (error) {
@@ -516,26 +520,25 @@ export default function Swap() {
                   whileHover={{
                     scale:
                       isValid &&
-                      values.fromAmount &&
-                      !createOrderMutation.isPending
+                        values.fromAmount &&
+                        !createOrderMutation.isPending
                         ? 1.02
                         : 1,
                   }}
                   whileTap={{
                     scale:
                       isValid &&
-                      values.fromAmount &&
-                      !createOrderMutation.isPending
+                        values.fromAmount &&
+                        !createOrderMutation.isPending
                         ? 0.98
                         : 1,
                   }}
-                  className={`w-full rounded-lg py-3 font-medium text-white shadow-lg transition-all ${
-                    isValid &&
+                  className={`w-full rounded-lg py-3 font-medium text-white shadow-lg transition-all ${isValid &&
                     values.fromAmount &&
                     !createOrderMutation.isPending
-                      ? "bg-gradient-to-r from-[#8F81F8] to-[#7C6EF8] hover:from-[#7C6EF8] hover:to-[#6B5EF7]"
-                      : "cursor-not-allowed bg-gray-300"
-                  }`}
+                    ? "bg-gradient-to-r from-[#8F81F8] to-[#7C6EF8] hover:from-[#7C6EF8] hover:to-[#6B5EF7]"
+                    : "cursor-not-allowed bg-gray-300"
+                    }`}
                 >
                   {createOrderMutation.isPending
                     ? "Creating Order..."
