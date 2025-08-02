@@ -121,31 +121,31 @@ export function serializeCrossChainOrder(
             data: hashLockData
         },
         timeLocks: {
-            srcWithdrawal: escrowExtension.timeLocks.srcWithdrawal.toString(),
-            srcPublicWithdrawal: escrowExtension.timeLocks.srcPublicWithdrawal.toString(),
-            srcCancellation: escrowExtension.timeLocks.srcCancellation.toString(),
-            srcPublicCancellation: escrowExtension.timeLocks.srcPublicCancellation.toString(),
-            dstWithdrawal: escrowExtension.timeLocks.dstWithdrawal.toString(),
-            dstPublicWithdrawal: escrowExtension.timeLocks.dstPublicWithdrawal.toString(),
-            dstCancellation: escrowExtension.timeLocks.dstCancellation.toString()
+            srcWithdrawal: (escrowExtension.timeLocks as any).srcWithdrawal.toString(),
+            srcPublicWithdrawal: (escrowExtension.timeLocks as any).srcPublicWithdrawal.toString(),
+            srcCancellation: (escrowExtension.timeLocks as any).srcCancellation.toString(),
+            srcPublicCancellation: (escrowExtension.timeLocks as any).srcPublicCancellation.toString(),
+            dstWithdrawal: (escrowExtension.timeLocks as any).dstWithdrawal.toString(),
+            dstPublicWithdrawal: (escrowExtension.timeLocks as any).dstPublicWithdrawal.toString(),
+            dstCancellation: (escrowExtension.timeLocks as any).dstCancellation.toString()
         },
-        srcChainId: escrowExtension.srcChainId,
+        srcChainId: (escrowExtension as any).srcChainId,
         dstChainId: escrowExtension.dstChainId,
         srcSafetyDeposit: escrowExtension.srcSafetyDeposit.toString(),
         dstSafetyDeposit: escrowExtension.dstSafetyDeposit.toString(),
 
         // Details
         auction: {
-            initialRateBump: extension.auction.initialRateBump,
-            points: extension.auction.points,
-            duration: extension.auction.duration.toString(),
-            startTime: extension.auction.startTime.toString()
+            initialRateBump: (extension as any).auction.initialRateBump,
+            points: (extension as any).auction.points,
+            duration: (extension as any).auction.duration.toString(),
+            startTime: (extension as any).auction.startTime.toString()
         },
-        whitelist: extension.whitelist.map(item => ({
+        whitelist: (extension as any).whitelist.map((item: any) => ({
             address: item.address.toString(),
             allowFrom: item.allowFrom.toString()
         })),
-        resolvingStartTime: extension.resolvingStartTime.toString(),
+        resolvingStartTime: (extension as any).resolvingStartTime.toString(),
 
         // Extra
         nonce: order.nonce.toString(),
@@ -153,7 +153,7 @@ export function serializeCrossChainOrder(
         allowMultipleFills: order.multipleFillsAllowed,
 
         // Escrow factory
-        escrowFactory: escrowExtension.escrowFactory.toString(),
+        escrowFactory: (escrowExtension as any).escrowFactory.toString(),
 
         // Original creation parameters
         originalParams: {
@@ -186,7 +186,9 @@ export function deserializeCrossChainOrder(serialized: SerializedCrossChainOrder
             hashLock = Sdk.HashLock.forSingleFill(serialized.hashLock.data as string)
         } else {
             const leaves = serialized.hashLock.data as string[]
-            hashLock = Sdk.HashLock.forMultipleFills(leaves)
+            // Convert string array to MerkleLeaf array using getMerkleLeaves
+            const merkleLeaves = Sdk.HashLock.getMerkleLeaves(leaves)
+            hashLock = Sdk.HashLock.forMultipleFills(merkleLeaves)
         }
     }
 
@@ -485,16 +487,16 @@ export function serializeOrderAlternative(order: Sdk.CrossChainOrder): Alternati
         },
         extension: {
             auction: {
-                initialRateBump: order.extension.auction.initialRateBump,
-                points: order.extension.auction.points,
-                duration: order.extension.auction.duration.toString(),
-                startTime: order.extension.auction.startTime.toString()
+                initialRateBump: (order.extension as any).auction.initialRateBump,
+                points: (order.extension as any).auction.points,
+                duration: (order.extension as any).auction.duration.toString(),
+                startTime: (order.extension as any).auction.startTime.toString()
             },
-            whitelist: order.extension.whitelist.map(item => ({
+            whitelist: (order.extension as any).whitelist.map((item: any) => ({
                 address: item.address.toString(),
                 allowFrom: item.allowFrom.toString()
             })),
-            resolvingStartTime: order.extension.resolvingStartTime.toString()
+            resolvingStartTime: (order.extension as any).resolvingStartTime.toString()
         },
         escrowParams: {
             hashLock: {
@@ -502,19 +504,19 @@ export function serializeOrderAlternative(order: Sdk.CrossChainOrder): Alternati
                 data: order.multipleFillsAllowed ? ['placeholder'] : 'placeholder' // You'd need to extract actual data
             },
             timeLocks: {
-                srcWithdrawal: order.escrowExtension.timeLocks.srcWithdrawal.toString(),
-                srcPublicWithdrawal: order.escrowExtension.timeLocks.srcPublicWithdrawal.toString(),
-                srcCancellation: order.escrowExtension.timeLocks.srcCancellation.toString(),
-                srcPublicCancellation: order.escrowExtension.timeLocks.srcPublicCancellation.toString(),
-                dstWithdrawal: order.escrowExtension.timeLocks.dstWithdrawal.toString(),
-                dstPublicWithdrawal: order.escrowExtension.timeLocks.dstPublicWithdrawal.toString(),
-                dstCancellation: order.escrowExtension.timeLocks.dstCancellation.toString()
+                srcWithdrawal: (order.escrowExtension.timeLocks as any).srcWithdrawal.toString(),
+                srcPublicWithdrawal: (order.escrowExtension.timeLocks as any).srcPublicWithdrawal.toString(),
+                srcCancellation: (order.escrowExtension.timeLocks as any).srcCancellation.toString(),
+                srcPublicCancellation: (order.escrowExtension.timeLocks as any).srcPublicCancellation.toString(),
+                dstWithdrawal: (order.escrowExtension.timeLocks as any).dstWithdrawal.toString(),
+                dstPublicWithdrawal: (order.escrowExtension.timeLocks as any).dstPublicWithdrawal.toString(),
+                dstCancellation: (order.escrowExtension.timeLocks as any).dstCancellation.toString()
             },
-            srcChainId: order.escrowExtension.srcChainId,
+            srcChainId: (order.escrowExtension as any).srcChainId,
             dstChainId: order.escrowExtension.dstChainId,
             srcSafetyDeposit: order.escrowExtension.srcSafetyDeposit.toString(),
             dstSafetyDeposit: order.escrowExtension.dstSafetyDeposit.toString()
         },
-        escrowFactory: order.escrowExtension.escrowFactory.toString()
+        escrowFactory: (order.escrowExtension as any).escrowFactory.toString()
     }
 } 

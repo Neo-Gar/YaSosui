@@ -73,7 +73,7 @@ export function useSwapOrder() {
         dstChainId: number,
         srcTimestamp: bigint,
         resolver: string,
-        allowMultipleFills: boolean = false,
+        allowMultipleFills: boolean,
         secrets?: string[]
     }
 
