@@ -2,18 +2,18 @@ import { SuiClient } from "@mysten/sui/client";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
 import * as Sdk from "@1inch/cross-chain-sdk";
+import useSUIUser from "./SUIUser";
 
 const client = new SuiClient({
   url: "https://fullnode.testnet.sui.io:443",
 });
 
-const suiFactoryTarget: string = ""; // Hardcoded!
-const suiFactoryObject: string = ""; // Hardcoded!
-const paymentCoin = ""; // Hardcoded!
-const depositToken = ""; // Hardcoded!
-const SUI_PRIVATE_KEY = "";
-const dstChainResolverKeypair = Ed25519Keypair.fromSecretKey(SUI_PRIVATE_KEY);
-const secret = "Secret";
+const suiFactoryTarget: string =
+  "0xbe9ff52b3a26bf82b0e03334341cda0e47c402d59ae37dd3f20a1476c9afeea8"; // Hardcoded!
+const suiFactoryObject: string =
+  "0x0119f4ba6ddc450bb1bec3a0a209763e7f449b0b337ad3d52b8e431fe146d6b1"; // Hardcoded!
+const suiCoinType =
+  "0xbe9ff52b3a26bf82b0e03334341cda0e47c402d59ae37dd3f20a1476c9afeea8::token::my_coin";
 
 const hexToBytes = (hex: string): number[] => {
   const cleanHex = hex.startsWith("0x") ? hex.slice(2) : hex;
@@ -24,10 +24,21 @@ const hexToBytes = (hex: string): number[] => {
   return bytes;
 };
 
+async function pickCoin(owner: string, coinType: string, min: bigint) {
+  const res = await client.getCoins({ owner, coinType, limit: 200 });
+  // choose one coin with enough balance
+  const single = res.data.find((c) => BigInt(c.balance) >= min);
+  if (single) return single.coinObjectId;
+
+  throw new Error("Not enough balance");
+}
+
+const { user, signAndExecuteTransaction } = useSUIUser();
+
 export const deployDistEscrow = async (
   order: Sdk.CrossChainOrder,
+  orderHash: string,
 ): Promise<string> => {
-  const orderHash = order.getOrderHash(1);
   const hashLock = order.escrowExtension.hashLockInfo;
   const maker = order.maker;
   const taker = order.maker; // ?
@@ -37,6 +48,17 @@ export const deployDistEscrow = async (
   const timeLocks = order.escrowExtension.timeLocks;
   // Deploy escrow
   const txbEscrow = new Transaction();
+
+  const [safetyDepositCoin] = txbEscrow.splitCoins(txbEscrow.gas, [
+    txbEscrow.pure.u64(safetyDeposit),
+  ]);
+
+  const depositTokenCoin = await pickCoin(
+    user!.address,
+    suiCoinType,
+    safetyDeposit,
+  );
+
   txbEscrow.moveCall({
     target: `${suiFactoryTarget}::escrow_factory::deploy_escrow`,
     arguments: [
@@ -49,16 +71,12 @@ export const deployDistEscrow = async (
       txbEscrow.pure("u64", amount), // amount
       txbEscrow.pure("u64", safetyDeposit), // safety_deposit
       txbEscrow.pure("vector<u8>", hexToBytes(timeLocks.toString())), // time_locks
-      txbEscrow.object(paymentCoin), // payment coin
-      txbEscrow.object(depositToken), // deposit token
+      safetyDepositCoin, // payment coin
+      txbEscrow.object(depositTokenCoin), // deposit token
     ],
   });
 
-  const dstDeployedAt = await client.signAndExecuteTransaction({
-    transaction: txbEscrow,
-    signer: dstChainResolverKeypair,
-    options: { showEvents: true, showObjectChanges: true }, // or showEffects: true on older SDKs
-  });
+  const dstDeployedAt = await signAndExecuteTransaction(txbEscrow);
 
   // Get escrow id
   const transaction = await client.getTransactionBlock({
@@ -82,9 +100,5 @@ export const withdrawDst = async (escrowId: string, secret: string) => {
     ],
   });
 
-  await client.signAndExecuteTransaction({
-    transaction: txbWithdraw,
-    signer: dstChainResolverKeypair,
-    options: { showEvents: true, showObjectChanges: true }, // or showEffects: true on older SDKs
-  });
+  await signAndExecuteTransaction(txbWithdraw);
 };

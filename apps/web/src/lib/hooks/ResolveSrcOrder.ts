@@ -1,5 +1,5 @@
 import { JsonRpcProvider, randomBytes, Wallet } from "ethers";
-import { Resolver } from "../../lib/other/resolver";
+import { Resolver } from "../other/resolver";
 import * as Sdk from "@1inch/cross-chain-sdk";
 import { Address } from "@1inch/fusion-sdk";
 import { uint8ArrayToHex } from "@1inch/byte-utils";
