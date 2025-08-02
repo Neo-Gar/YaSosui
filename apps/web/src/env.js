@@ -23,6 +23,8 @@ export const env = createEnv({
     NEXT_PUBLIC_SUI_CHAIN_RPC_URL: z.string(),
     NEXT_PUBLIC_SUI_ESCROW_FACTORY_ADDRESS: z.string(),
     NEXT_PUBLIC_SUI_PRIVATE_KEY: z.string(),
+    NEXT_PUBLIC_EVM_RESOLVER_ADDRESS: z.string(),
+    NEXT_PUBLIC_EVM_ESCROW_FACTORY_ADDRESS: z.string(),
   },
 
   /**
@@ -38,6 +40,8 @@ export const env = createEnv({
     NEXT_PUBLIC_SUI_CHAIN_RPC_URL: process.env.NEXT_PUBLIC_SUI_CHAIN_RPC_URL,
     NEXT_PUBLIC_SUI_ESCROW_FACTORY_ADDRESS: process.env.NEXT_PUBLIC_SUI_ESCROW_FACTORY_ADDRESS,
     NEXT_PUBLIC_SUI_PRIVATE_KEY: process.env.NEXT_PUBLIC_SUI_PRIVATE_KEY,
+    NEXT_PUBLIC_EVM_RESOLVER_ADDRESS: process.env.NEXT_PUBLIC_EVM_RESOLVER_ADDRESS,
+    NEXT_PUBLIC_EVM_ESCROW_FACTORY_ADDRESS: process.env.NEXT_PUBLIC_EVM_ESCROW_FACTORY_ADDRESS,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially

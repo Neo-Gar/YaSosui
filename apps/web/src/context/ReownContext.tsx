@@ -12,9 +12,9 @@ if (!projectId) {
 
 // Set up metadata
 const metadata = {
-  name: "YaSosui",
+  name: "YasoSui",
   description:
-    "YaSosui is a platform for swapping tokens between Sui and Ethereum with 1inch Fusion+",
+    "YasoSui is a platform for swapping tokens between Sui and Ethereum with 1inch Fusion+",
   url: "https://yasosui.com",
   icons: [""],
 };

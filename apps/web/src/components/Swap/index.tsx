@@ -222,7 +222,7 @@ export default function Swap() {
           ← Back
         </motion.button>
 
-        <h1 className="mb-4 text-3xl font-light text-black">YaSosui SWAP</h1>
+        <h1 className="mb-4 text-3xl font-light text-black">YasoSui SWAP</h1>
 
         <div className="flex-1 rounded-xl border border-gray-100 bg-white p-6 shadow-lg">
           <h2 className="mb-4 text-xl font-medium text-gray-800">

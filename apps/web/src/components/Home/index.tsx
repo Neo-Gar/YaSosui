@@ -125,7 +125,7 @@ export default function Home() {
           style={{ fontFamily: "Helvetica, Arial, sans-serif" }}
           variants={titleVariants}
         >
-          <span className="font-light">YaSosui</span>
+          <span className="font-light">YasoSui</span>
           <motion.span
             className="ml-6 font-medium"
             style={{ color: "#8F81F8" }}
