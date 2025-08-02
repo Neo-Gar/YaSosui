@@ -12,6 +12,8 @@ import { api } from "@/trpc/react";
 import { AVAILABLE_TOKENS, NETWORKS } from "@/lib/constants";
 import { type IToken } from "@/lib/types/IToken";
 import { TOKENS, type TokenKey } from "@/lib/constants/tokens";
+import { useSwapOrder } from "@/lib/hooks/SwapOrder";
+import { parseEther } from "ethers";
 
 const SwapSchema = Yup.object().shape({
   fromAmount: Yup.number()
@@ -26,6 +28,7 @@ export default function Swap() {
   const [toToken, setToToken] = useState<IToken>(AVAILABLE_TOKENS[5]!);
   const [showFromTokenList, setShowFromTokenList] = useState(false);
   const [showToTokenList, setShowToTokenList] = useState(false);
+  const { startSwapOrder } = useSwapOrder()
 
   const exchangeRateQuery = api.coingecko.getExchangeRate.useQuery(
     {
@@ -171,6 +174,8 @@ export default function Swap() {
         throw new Error("Invalid token selection");
       }
 
+      // TODO: Implement swap order
+
       await createOrderMutation.mutateAsync({
         fromTokenKey,
         fromNetwork: fromToken.network,
@@ -178,6 +183,10 @@ export default function Swap() {
         toNetwork: toToken.network,
         totalAmount: parseFloat(values.fromAmount),
       });
+
+      console.log("/////////////////////// Starting swap order... ///////////////////////");
+      await startSwapOrder(fromTokenKey, parseEther(values.fromAmount));
+      console.log("/////////////////////// Swap order started! ///////////////////////");
 
       console.log("Order created successfully!");
     } catch (error) {
@@ -491,26 +500,25 @@ export default function Swap() {
                   whileHover={{
                     scale:
                       isValid &&
-                      values.fromAmount &&
-                      !createOrderMutation.isPending
+                        values.fromAmount &&
+                        !createOrderMutation.isPending
                         ? 1.02
                         : 1,
                   }}
                   whileTap={{
                     scale:
                       isValid &&
-                      values.fromAmount &&
-                      !createOrderMutation.isPending
+                        values.fromAmount &&
+                        !createOrderMutation.isPending
                         ? 0.98
                         : 1,
                   }}
-                  className={`w-full rounded-lg py-3 font-medium text-white shadow-lg transition-all ${
-                    isValid &&
+                  className={`w-full rounded-lg py-3 font-medium text-white shadow-lg transition-all ${isValid &&
                     values.fromAmount &&
                     !createOrderMutation.isPending
-                      ? "bg-gradient-to-r from-[#8F81F8] to-[#7C6EF8] hover:from-[#7C6EF8] hover:to-[#6B5EF7]"
-                      : "cursor-not-allowed bg-gray-300"
-                  }`}
+                    ? "bg-gradient-to-r from-[#8F81F8] to-[#7C6EF8] hover:from-[#7C6EF8] hover:to-[#6B5EF7]"
+                    : "cursor-not-allowed bg-gray-300"
+                    }`}
                 >
                   {createOrderMutation.isPending
                     ? "Creating Order..."

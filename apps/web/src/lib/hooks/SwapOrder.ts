@@ -11,7 +11,6 @@ import {
     parseUnits,
     randomBytes,
     Wallet as SignerWallet,
-    BrowserProvider,
     type Signer
 } from 'ethers'
 import { uint8ArrayToHex, UINT_40_MAX } from '@1inch/byte-utils'
@@ -41,7 +40,7 @@ import resolverContract from '../../../../../packages/solidity/dist/contracts/Re
  * @dev A user can interact only with one active order at the time
  * @dev If order is activr pendingSwap == true, user can't create new order
  */
-export function SwapOrder() {
+export function useSwapOrder() {
     const [swapSuiToEth, setSwapEthToSui] = useState(false);
     const [pendingSwap, setPendingSwap] = useState(false);
 
@@ -63,24 +62,6 @@ export function SwapOrder() {
     const publicClient = usePublicClient()
 
 
-    // let srcChainUser: Wallet
-    // let srcChainResolver: Wallet
-    // let dstChainResolver: Ed25519Keypair
-
-    // // Factory and resolver contract instances
-    // let srcFactory: EscrowFactory
-    // let srcResolverContract: Wallet
-
-    // // Timestamp for order creation
-    // let srcTimestamp: bigint
-
-    // let src: EvmChain
-    // let dst: SuiChain
-
-    // let srcChainId: number;
-    // let dstChainId: number;
-
-
     /*//////////////////////////////////////////////////////////////
                            MAIN STEPS
     //////////////////////////////////////////////////////////////*/
@@ -89,28 +70,21 @@ export function SwapOrder() {
         setPendingSwap(true)
         if (!swapSuiToEth) {
 
+            console.log('[swapOrder] // STEP 0: Initializing swapOrder by user on Ethereum')
 
             // Create an ethers BrowserProvider from the wallet client
             if (!walletClient) throw new Error('Wallet client not available')
-            const ethersProvider = new BrowserProvider(walletClient);
             const jsonRpcProvider = new JsonRpcProvider(config.chain.evm.rpcUrl);
 
             const src: EvmChain = await initChain(config.chain.evm, jsonRpcProvider)
 
-            console.log('[swapOrder] // STEP 0: Initializing swapOrder by user on Ethereum')
-
             // STEP 0: Initializing swapOrder by user on Ethereum
 
-            // Get signer from wallet client
-            const chainUserSigner = await ethersProvider.getSigner()
-            const chainUser = new Wallet(chainUserSigner, jsonRpcProvider)
-
-
             // Get initial balance of user's token
-            const initialBalance = await chainUser.tokenBalance(tokenAddress as `0x${string}`)
+            const initialBalance = await getBalanceEVMForToken(tokenAddress as `0x${string}`)//await chainUser.tokenBalance(tokenAddress as `0x${string}`)
 
             console.log('[swapOrder] User initialBalance for EVM token ', tokenAddress, initialBalance)
-            console.log('[swapOrder] STEP 1: User creates cross-chain order with multiple fill capability')
+            console.log('[swapOrder] // STEP 1: User creates cross-chain order with multiple fill capability')
 
             // STEP 1: User creates cross-chain order with multiple fill capability
 
@@ -128,15 +102,15 @@ export function SwapOrder() {
                 config.chain.evm.tokens.USDC.address,
                 '0x0000000000000000000000000000000000000001', // Placeholder for Sui USDC
                 secrets[0]!, // Use the first secret for multiple fills
-                chainId as number,
-                0,
+                1,
+                1,
                 BigInt((await src.provider.getBlock('latest'))!.timestamp),
-                src.resolver,
+                src.resolver, /// TODO: Add resolver CONTRACT address
                 true,
                 secrets
             )
             // STEP 2: User signs the order
-            const signature = await chainUser.signOrder(chainId as number, order)
+            const signature = await signOrder(chainId as number, order)
             const orderHash = order.getOrderHash(chainId as number)
 
 
@@ -153,8 +127,10 @@ export function SwapOrder() {
     //////////////////////////////////////////////////////////////*/
 
     // TODO: Implement helper functions getting balance for EVM
-    function getBalanceEVMForToken(tokenAddress: string): bigint {
-        const { data: balance } = useReadContract({
+    async function getBalanceEVMForToken(tokenAddress: string): Promise<bigint> {
+        if (!publicClient) throw new Error('Public client not available')
+
+        const balance = await publicClient.readContract({
             address: tokenAddress as `0x${string}`,
             abi: [{
                 name: 'balanceOf',
@@ -169,22 +145,19 @@ export function SwapOrder() {
         return balance ?? 0n
     }
 
-    function approveToken(tokenAddress: string, spender: string, amount: bigint) {
-        const { writeContract } = useWriteContract()
+    async function signOrder(srcChainId: number, order: Sdk.CrossChainOrder): Promise<string> {
+        if (!walletClient) throw new Error('Wallet client not available')
 
-        return writeContract({
-            address: tokenAddress as `0x${string}`,
-            abi: [{
-                name: 'approve',
-                type: 'function',
-                stateMutability: 'nonpayable',
-                inputs: [{ name: 'spender', type: 'address' }, { name: 'amount', type: 'uint256' }],
-                outputs: [{ name: 'success', type: 'bool' }]
-            }],
-            functionName: 'approve',
-            args: [spender as `0x${string}`, amount]
+        const typedData = order.getTypedData(srcChainId)
+
+        return walletClient.signTypedData({
+            domain: typedData.domain,
+            types: { Order: typedData.types[typedData.primaryType]! },
+            primaryType: 'Order',
+            message: typedData.message
         })
     }
+
     // TODO: Implement helper functions getting balance for SUI
 
     /**
@@ -196,40 +169,47 @@ export function SwapOrder() {
         cnf: ChainConfig,
         provider: JsonRpcProvider,
     ): Promise<{ provider: JsonRpcProvider; escrowFactory: string; resolver: string }> {
+        try {
+            console.log('[swapOrder:initChain] Initializing chain pk', cnf.ownerPrivateKey)
 
-        const deployer = new SignerWallet(cnf.ownerPrivateKey, provider)
+            if (!cnf.ownerPrivateKey) throw new Error('Owner private key is required')
 
-        // STEP 1: Deploy EscrowFactory contract
-        const escrowFactory = await deploy(
-            factoryContract,
-            [
-                cnf.limitOrderProtocol,
-                cnf.wrappedNative, // feeToken,
-                Address.fromBigInt(0n).toString(), // accessToken,
-                deployer.address, // owner
-                60 * 30, // src rescue delay
-                60 * 30 // dst rescue delay
-            ],
-            provider,
-            deployer
-        )
-        console.log(`[${chainId}]`, `Escrow factory contract deployed to`, escrowFactory)
+            const deployer = new SignerWallet(cnf.ownerPrivateKey, provider)
 
-        // STEP 2: Deploy Resolver contract
-        const resolver = '0x0000000000000000000000000000000000000001'
-        // const resolver = await deploy(
-        //     resolverContract,
-        //     [
-        //         escrowFactory,
-        //         cnf.limitOrderProtocol,
-        //         computeAddress(resolverPk) // resolver as owner of contract
-        //     ],
-        //     provider,
-        //     deployer
-        // )
-        console.log(`[${chainId}]`, `Resolver contract deployed to`, resolver)
+            // STEP 1: Deploy EscrowFactory contract
+            const escrowFactory = await deploy(
+                factoryContract,
+                [
+                    cnf.limitOrderProtocol,
+                    cnf.wrappedNative, // feeToken,
+                    Address.fromBigInt(0n).toString(), // accessToken,
+                    deployer.address, // owner
+                    60 * 30, // src rescue delay
+                    60 * 30 // dst rescue delay
+                ],
+                provider,
+                deployer
+            )
+            console.log(`[${chainId}]`, `Escrow factory contract deployed to`, escrowFactory)
 
-        return { provider, resolver, escrowFactory }
+            // STEP 2: Deploy Resolver contract
+            const resolver = await deploy(
+                resolverContract,
+                [
+                    escrowFactory,
+                    cnf.limitOrderProtocol,
+                    deployer.address // resolver as owner of contract
+                ],
+                provider,
+                deployer
+            )
+            console.log(`[${chainId}]`, `Resolver contract deployed to`, resolver)
+
+            return { provider, resolver, escrowFactory }
+        } catch (error) {
+            console.error('[swapOrder:initChain] Error initializing chain', error)
+            throw error
+        }
     }
 
     /**
@@ -395,4 +375,6 @@ export function SwapOrder() {
             )
         }
     }
+
+    return { startSwapOrder }
 }

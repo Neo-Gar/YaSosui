@@ -18,6 +18,11 @@ export const env = createEnv({
    */
   client: {
     NEXT_PUBLIC_REOWN_PROJECT_ID: z.string(),
+    NEXT_PUBLIC_EVM_OWNER_PRIVATE_KEY: z.string(),
+    NEXT_PUBLIC_EVM_CHAIN_RPC_URL: z.string(),
+    NEXT_PUBLIC_SUI_CHAIN_RPC_URL: z.string(),
+    NEXT_PUBLIC_SUI_ESCROW_FACTORY_ADDRESS: z.string(),
+    NEXT_PUBLIC_SUI_PRIVATE_KEY: z.string(),
   },
 
   /**
@@ -28,6 +33,11 @@ export const env = createEnv({
     NODE_ENV: process.env.NODE_ENV,
     POSTGRES_URL: process.env.POSTGRES_URL,
     NEXT_PUBLIC_REOWN_PROJECT_ID: process.env.NEXT_PUBLIC_REOWN_PROJECT_ID,
+    NEXT_PUBLIC_EVM_OWNER_PRIVATE_KEY: process.env.NEXT_PUBLIC_EVM_OWNER_PRIVATE_KEY,
+    NEXT_PUBLIC_EVM_CHAIN_RPC_URL: process.env.NEXT_PUBLIC_EVM_CHAIN_RPC_URL,
+    NEXT_PUBLIC_SUI_CHAIN_RPC_URL: process.env.NEXT_PUBLIC_SUI_CHAIN_RPC_URL,
+    NEXT_PUBLIC_SUI_ESCROW_FACTORY_ADDRESS: process.env.NEXT_PUBLIC_SUI_ESCROW_FACTORY_ADDRESS,
+    NEXT_PUBLIC_SUI_PRIVATE_KEY: process.env.NEXT_PUBLIC_SUI_PRIVATE_KEY,
   },
   /**
    * Run `build` or `dev` with `SKIP_ENV_VALIDATION` to skip env validation. This is especially
