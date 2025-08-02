@@ -135,6 +135,22 @@ export function useSwapOrder() {
                 secrets: secrets
             }
             // Create order with multiple fills enabled
+            console.log('[swapOrder] Creating order with params:', {
+                escrowFactory: preOrder.escrowFactory,
+                maker: preOrder.maker,
+                makingAmount: preOrder.makingAmount.toString(),
+                takingAmount: preOrder.takingAmount.toString(),
+                makerAsset: preOrder.makerAsset,
+                takerAsset: preOrder.takerAsset,
+                secret: preOrder.secret,
+                srcChainId: preOrder.srcChainId,
+                dstChainId: preOrder.dstChainId,
+                srcTimestamp: preOrder.srcTimestamp.toString(),
+                resolver: preOrder.resolver,
+                allowMultipleFills: preOrder.allowMultipleFills,
+                secretsCount: preOrder.secrets?.length
+            })
+
             const order = createLocalOrder(
                 preOrder.escrowFactory,
                 preOrder.maker,
@@ -157,34 +173,23 @@ export function useSwapOrder() {
 
             console.log('[swapOrder] Order', order)
 
-            // Create order with serialization data
-            const { order: serializedOrder, serializationData } = createOrderWithSerialization(
-                preOrder.escrowFactory,
-                preOrder.maker,
-                preOrder.makingAmount,
-                preOrder.takingAmount,
-                preOrder.makerAsset,
-                preOrder.takerAsset,
-                preOrder.secret,
-                preOrder.srcChainId,
-                preOrder.dstChainId,
-                preOrder.srcTimestamp,
-                preOrder.resolver,
-                preOrder.allowMultipleFills,
-                preOrder.secrets
-
-            )
-            // Serialize to JSON
-            const jsonOrder = orderToJson(serializedOrder, serializationData.originalSecret)
+            // Serialize the same order to JSON
+            console.log('[swapOrder] Order structure:', {
+                hasEscrowExtension: !!order.escrowExtension,
+                hasExtension: !!order.extension,
+                extensionKeys: order.extension ? Object.keys(order.extension) : 'no extension',
+                escrowExtensionKeys: order.escrowExtension ? Object.keys(order.escrowExtension) : 'no escrowExtension'
+            })
+            const jsonOrder = orderToJson(order, preOrder.secret, preOrder.secrets, preOrder.escrowFactory, preOrder.srcChainId, preOrder.dstChainId)
 
             console.log('[swapOrder] Serialized order', jsonOrder)
             console.log(`[swapOrder]`, `${chainId} Order signed by user`, orderHash)
 
             return {
                 data: {
-                    fromTokenKey: config.chain.evm.tokens.USDC.address,
+                    fromTokenKey: 'USDC',
                     fromNetwork: 'ethereum',
-                    toTokenKey: '0x0000000000000000000000000000000000000001',
+                    toTokenKey: 'SUI',
                     toNetwork: 'sui',
                     signature: [signature],
                     orderHash: [orderHash],

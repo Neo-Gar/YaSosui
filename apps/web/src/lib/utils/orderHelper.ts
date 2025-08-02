@@ -42,7 +42,9 @@ export function createLocalOrder(
         const secretHashes = secrets.map((s) => Sdk.HashLock.hashSecret(s))
         const leaves = Sdk.HashLock.getMerkleLeaves(secrets)
 
-        return Sdk.CrossChainOrder.new(
+        console.log('[orderHelper] Creating multiple fills order with leaves:', leaves.length)
+
+        const order = Sdk.CrossChainOrder.new(
             new Address(escrowFactory),
             {
                 salt: Sdk.randBigInt(1000n),
@@ -90,9 +92,19 @@ export function createLocalOrder(
                 allowMultipleFills: true
             }
         )
+
+        console.log('[orderHelper] Created order:', {
+            hasExtension: !!order.extension,
+            hasEscrowExtension: !!order.escrowExtension,
+            extensionKeys: order.extension ? Object.keys(order.extension) : 'no extension'
+        })
+
+        return order
     } else {
         // STEP 1: Create hash lock for single fill (only one secret needed)
-        return Sdk.CrossChainOrder.new(
+        console.log('[orderHelper] Creating single fill order')
+
+        const order = Sdk.CrossChainOrder.new(
             new Address(escrowFactory),
             {
                 salt: Sdk.randBigInt(1000n),
@@ -140,5 +152,13 @@ export function createLocalOrder(
                 allowMultipleFills: false
             }
         )
+
+        console.log('[orderHelper] Created single fill order:', {
+            hasExtension: !!order.extension,
+            hasEscrowExtension: !!order.escrowExtension,
+            extensionKeys: order.extension ? Object.keys(order.extension) : 'no extension'
+        })
+
+        return order
     }
 }

@@ -79,7 +79,10 @@ export interface SerializedCrossChainOrderWithParams extends SerializedCrossChai
 export function serializeCrossChainOrder(
     order: Sdk.CrossChainOrder,
     originalSecret?: string,
-    originalSecrets?: string[]
+    originalSecrets?: string[],
+    escrowFactory?: string,
+    srcChainId?: number,
+    dstChainId?: number
 ): SerializedCrossChainOrderWithParams {
     // Extract order data using the build() method
     const orderData = order.build()
@@ -106,6 +109,49 @@ export function serializeCrossChainOrder(
         hashLockData = order.multipleFillsAllowed ? ['placeholder'] : 'placeholder'
     }
 
+    // Add null checks for escrowExtension and its properties
+    if (!escrowExtension) {
+        throw new Error('escrowExtension is undefined')
+    }
+
+    if (!escrowExtension.timeLocks) {
+        throw new Error('escrowExtension.timeLocks is undefined')
+    }
+
+    if (!extension) {
+        throw new Error('extension is undefined')
+    }
+
+
+
+    // More robust checking - the extension might have a different structure
+    let auction = (extension as any).auction || (extension as any).details?.auction || (extension as any).extension?.auction
+    let whitelist = (extension as any).whitelist || (extension as any).details?.whitelist || (extension as any).extension?.whitelist
+    let resolvingStartTime = (extension as any).resolvingStartTime || (extension as any).details?.resolvingStartTime || (extension as any).extension?.resolvingStartTime
+
+    // If we still can't find the properties, try to create default values
+    if (!auction) {
+        console.warn('Auction not found in extension, creating default auction')
+        auction = {
+            initialRateBump: 0,
+            points: [],
+            duration: BigInt(120),
+            startTime: BigInt(0)
+        }
+    }
+
+    if (!whitelist) {
+        console.warn('Whitelist not found in extension, creating default whitelist')
+        whitelist = []
+    }
+
+    if (!resolvingStartTime) {
+        console.warn('ResolvingStartTime not found in extension, using default')
+        resolvingStartTime = BigInt(0)
+    }
+
+
+
     return {
         // Order info
         salt: order.salt.toString(),
@@ -121,39 +167,39 @@ export function serializeCrossChainOrder(
             data: hashLockData
         },
         timeLocks: {
-            srcWithdrawal: (escrowExtension.timeLocks as any).srcWithdrawal.toString(),
-            srcPublicWithdrawal: (escrowExtension.timeLocks as any).srcPublicWithdrawal.toString(),
-            srcCancellation: (escrowExtension.timeLocks as any).srcCancellation.toString(),
-            srcPublicCancellation: (escrowExtension.timeLocks as any).srcPublicCancellation.toString(),
-            dstWithdrawal: (escrowExtension.timeLocks as any).dstWithdrawal.toString(),
-            dstPublicWithdrawal: (escrowExtension.timeLocks as any).dstPublicWithdrawal.toString(),
-            dstCancellation: (escrowExtension.timeLocks as any).dstCancellation.toString()
+            srcWithdrawal: (escrowExtension.timeLocks as any).srcWithdrawal?.toString() || '0',
+            srcPublicWithdrawal: (escrowExtension.timeLocks as any).srcPublicWithdrawal?.toString() || '0',
+            srcCancellation: (escrowExtension.timeLocks as any).srcCancellation?.toString() || '0',
+            srcPublicCancellation: (escrowExtension.timeLocks as any).srcPublicCancellation?.toString() || '0',
+            dstWithdrawal: (escrowExtension.timeLocks as any).dstWithdrawal?.toString() || '0',
+            dstPublicWithdrawal: (escrowExtension.timeLocks as any).dstPublicWithdrawal?.toString() || '0',
+            dstCancellation: (escrowExtension.timeLocks as any).dstCancellation?.toString() || '0'
         },
-        srcChainId: (escrowExtension as any).srcChainId,
-        dstChainId: escrowExtension.dstChainId,
-        srcSafetyDeposit: escrowExtension.srcSafetyDeposit.toString(),
-        dstSafetyDeposit: escrowExtension.dstSafetyDeposit.toString(),
+        srcChainId: srcChainId || 0,
+        dstChainId: dstChainId || 0,
+        srcSafetyDeposit: escrowExtension.srcSafetyDeposit?.toString() || '0',
+        dstSafetyDeposit: escrowExtension.dstSafetyDeposit?.toString() || '0',
 
         // Details
         auction: {
-            initialRateBump: (extension as any).auction.initialRateBump,
-            points: (extension as any).auction.points,
-            duration: (extension as any).auction.duration.toString(),
-            startTime: (extension as any).auction.startTime.toString()
+            initialRateBump: auction.initialRateBump || 0,
+            points: auction.points || [],
+            duration: auction.duration?.toString() || '0',
+            startTime: auction.startTime?.toString() || '0'
         },
-        whitelist: (extension as any).whitelist.map((item: any) => ({
-            address: item.address.toString(),
-            allowFrom: item.allowFrom.toString()
+        whitelist: whitelist.map((item: any) => ({
+            address: item.address?.toString() || '',
+            allowFrom: item.allowFrom?.toString() || '0'
         })),
-        resolvingStartTime: (extension as any).resolvingStartTime.toString(),
+        resolvingStartTime: resolvingStartTime?.toString() || '0',
 
         // Extra
         nonce: order.nonce.toString(),
         allowPartialFills: order.partialFillAllowed,
         allowMultipleFills: order.multipleFillsAllowed,
 
-        // Escrow factory
-        escrowFactory: (escrowExtension as any).escrowFactory.toString(),
+        // Escrow factory - use the factory address from the order creation
+        escrowFactory: escrowFactory || '',
 
         // Original creation parameters
         originalParams: {
@@ -259,9 +305,12 @@ export function deserializeCrossChainOrder(serialized: SerializedCrossChainOrder
 export function orderToJson(
     order: Sdk.CrossChainOrder,
     originalSecret?: string,
-    originalSecrets?: string[]
+    originalSecrets?: string[],
+    escrowFactory?: string,
+    srcChainId?: number,
+    dstChainId?: number
 ): string {
-    const serialized = serializeCrossChainOrder(order, originalSecret, originalSecrets)
+    const serialized = serializeCrossChainOrder(order, originalSecret, originalSecrets, escrowFactory, srcChainId, dstChainId)
     return JSON.stringify(serialized)
 }
 
@@ -326,7 +375,7 @@ export function createOrderWithSerialization(
                 srcChainId,
                 dstChainId,
                 srcSafetyDeposit: BigInt('1000000000000000'), // 0.001 ETH
-                dstSafetyDeposit: BigInt('1000000000000000')  // 0.001 ETH
+                dstSafetyDeposit: BigInt('1000000000000000') // 0.001 ETH
             },
             {
                 auction: new Sdk.AuctionDetails({
@@ -377,7 +426,7 @@ export function createOrderWithSerialization(
                 srcChainId,
                 dstChainId,
                 srcSafetyDeposit: BigInt('1000000000000000'), // 0.001 ETH
-                dstSafetyDeposit: BigInt('1000000000000000')  // 0.001 ETH
+                dstSafetyDeposit: BigInt('1000000000000000') // 0.001 ETH
             },
             {
                 auction: new Sdk.AuctionDetails({
