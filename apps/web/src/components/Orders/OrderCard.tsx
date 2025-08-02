@@ -92,10 +92,9 @@ export default function OrderCard({ order }: OrderCardProps) {
   const handleSwap = async () => {
     if (localOrder.status !== "active") return;
 
-    /// TODO: get the order from the database
-
-    //You can get order from the database
-    //const order = await api.orders.getById.useQuery({ id: localOrder.id }); 
+    // TODO: get the order from the database
+    // You can get order from the database
+    // const order = await api.orders.getById.useQuery({ id: localOrder.id }); 
 
     //Or from local order
     const orderRecovered = orderFromJson(localOrder.jsonOrder ?? "");
