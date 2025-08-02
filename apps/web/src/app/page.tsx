@@ -1,8 +1,5 @@
+import Home from "@/components/Home";
 
-export default async function Home() {
-  return (
-    <div className="flex flex-col items-center justify-center h-screen w-full">
-      <h1 className="text-4xl font-bold">Suision swap</h1>
-    </div>
-  );
+export default function HomePage() {
+  return <Home />;
 }
