@@ -6,6 +6,7 @@ import type { IOrderWithTokens } from "@/lib/types/IOrder";
 import { TokenLogo } from "@/components/TokenLogo";
 import OrderTimer from "./OrderTimer";
 import { api } from "@/trpc/react";
+import { orderFromJson } from '@/lib/utils/orderSerializer'
 
 interface OrderCardProps {
   order: IOrderWithTokens;
@@ -90,6 +91,16 @@ export default function OrderCard({ order }: OrderCardProps) {
 
   const handleSwap = async () => {
     if (localOrder.status !== "active") return;
+
+    /// TODO: get the order from the database
+
+    //You can get order from the database
+    //const order = await api.orders.getById.useQuery({ id: localOrder.id }); 
+
+    //Or from local order
+    const orderRecovered = orderFromJson(localOrder.jsonOrder ?? "");
+    console.log(">>> orderRecovered: ", orderRecovered);
+
 
     // Check if selected percentage is available
     if (!availableForPayment.includes(selectedPercentage)) {
@@ -306,13 +317,12 @@ export default function OrderCard({ order }: OrderCardProps) {
                     isAvailable && setSelectedPercentage(percentage)
                   }
                   disabled={!isAvailable}
-                  className={`flex-1 rounded-lg px-3 py-2 text-xs font-medium transition-all duration-200 ${
-                    !isAvailable
-                      ? "cursor-not-allowed bg-gray-50 text-gray-400"
-                      : selectedPercentage === percentage
-                        ? "bg-gradient-to-r from-[#8F81F8] to-[#7C6EF8] text-white shadow-md"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                  }`}
+                  className={`flex-1 rounded-lg px-3 py-2 text-xs font-medium transition-all duration-200 ${!isAvailable
+                    ? "cursor-not-allowed bg-gray-50 text-gray-400"
+                    : selectedPercentage === percentage
+                      ? "bg-gradient-to-r from-[#8F81F8] to-[#7C6EF8] text-white shadow-md"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    }`}
                   title={
                     !isAvailable
                       ? `Already collected: ${formatAmount(localOrder.collectedAmount)}`
@@ -343,11 +353,10 @@ export default function OrderCard({ order }: OrderCardProps) {
           disabled={
             isSwapping || !availableForPayment.includes(selectedPercentage)
           }
-          className={`w-full rounded-xl px-4 py-3 font-medium text-white transition-all duration-200 ${
-            isSwapping || !availableForPayment.includes(selectedPercentage)
-              ? "cursor-not-allowed bg-gray-400"
-              : "bg-gradient-to-r from-[#8F81F8] to-[#7C6EF8] hover:scale-[1.02] hover:shadow-lg"
-          }`}
+          className={`w-full rounded-xl px-4 py-3 font-medium text-white transition-all duration-200 ${isSwapping || !availableForPayment.includes(selectedPercentage)
+            ? "cursor-not-allowed bg-gray-400"
+            : "bg-gradient-to-r from-[#8F81F8] to-[#7C6EF8] hover:scale-[1.02] hover:shadow-lg"
+            }`}
           whileHover={!isSwapping ? { scale: 1.02 } : {}}
           whileTap={!isSwapping ? { scale: 0.98 } : {}}
         >

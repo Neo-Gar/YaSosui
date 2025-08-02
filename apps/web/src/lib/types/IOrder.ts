@@ -10,6 +10,7 @@ export interface IOrder {
   signature?: string | null; // Optional signature field
   orderHash?: string | null; // Optional order hash field
   secrets?: string | null; // Optional secrets field (stored as JSON string)
+  jsonOrder?: string | null; // Optional json order field (stored as JSON string)
   createdAt: Date;
   expiresAt: Date;
   updatedAt: Date;
