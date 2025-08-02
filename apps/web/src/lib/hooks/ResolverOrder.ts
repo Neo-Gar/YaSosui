@@ -1,6 +1,6 @@
 import * as Sdk from "@1inch/cross-chain-sdk";
-import { deploySrcEscrow, withdrawSrc } from "./ResolveSrcOrder";
-import { deployDistEscrow, withdrawDst } from "./ResolveDstOrder";
+import { deploySrcEscrow, withdrawSrc } from "./ResolveSrcETHOrder";
+import { deployDistEscrow, withdrawDst } from "./ResolveDstSUIOrder";
 
 const secret = "Secret";
 
