@@ -1,6 +1,7 @@
 import { SuiClient } from "@mysten/sui/client";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
+import * as Sdk from "@1inch/cross-chain-sdk";
 
 const client = new SuiClient({
   url: "https://fullnode.testnet.sui.io:443",
@@ -35,18 +36,16 @@ const hexToBytes = (hex: string): number[] => {
 };
 
 export const deployDistEscrow = async (
-  orderParams: OrderParams,
+  order: Sdk.CrossChainOrder,
 ): Promise<string> => {
-  const {
-    orderHash,
-    hashLock,
-    maker,
-    taker,
-    token,
-    amount,
-    safetyDeposit,
-    timeLocks,
-  } = orderParams;
+  const orderHash = order.getOrderHash(1);
+  const hashLock = order.escrowExtension.hashLockInfo;
+  const maker = order.maker;
+  const taker = order.maker; // ?
+  const token = order.takerAsset;
+  const amount = order.takingAmount;
+  const safetyDeposit = order.escrowExtension.srcSafetyDeposit;
+  const timeLocks = order.escrowExtension.timeLocks;
   // Deploy escrow
   const txbEscrow = new Transaction();
   txbEscrow.moveCall({
@@ -54,13 +53,13 @@ export const deployDistEscrow = async (
     arguments: [
       txbEscrow.object(suiFactoryObject), // factory object
       txbEscrow.pure("vector<u8>", hexToBytes(orderHash)), // order_hash
-      txbEscrow.pure("vector<u8>", hexToBytes(hashLock)), // hash_lock
-      txbEscrow.pure("address", maker), // maker
-      txbEscrow.pure("address", taker), // taker
-      txbEscrow.pure("address", token), // token
+      txbEscrow.pure("vector<u8>", hexToBytes(hashLock.toString())), // hash_lock
+      txbEscrow.pure("address", maker.toString()), // maker
+      txbEscrow.pure("address", taker.toString()), // taker
+      txbEscrow.pure("address", token.toString()), // token
       txbEscrow.pure("u64", amount), // amount
       txbEscrow.pure("u64", safetyDeposit), // safety_deposit
-      txbEscrow.pure("vector<u8>", hexToBytes(timeLocks)), // time_locks
+      txbEscrow.pure("vector<u8>", hexToBytes(timeLocks.toString())), // time_locks
       txbEscrow.object(paymentCoin), // payment coin
       txbEscrow.object(depositToken), // deposit token
     ],

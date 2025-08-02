@@ -4,17 +4,6 @@ import * as Sdk from "@1inch/cross-chain-sdk";
 import { Address } from "@1inch/fusion-sdk";
 import { uint8ArrayToHex } from "@1inch/byte-utils";
 
-interface OrderParams {
-  orderHash: string;
-  hashLock: string;
-  maker: string;
-  taker: string;
-  token: string;
-  amount: string;
-  safetyDeposit: string;
-  timeLocks: string;
-}
-
 const ethRPCLink = "";
 const ethChainId = 1;
 const ethProvider = new JsonRpcProvider(ethRPCLink, ethChainId, {
@@ -24,7 +13,7 @@ const ethProvider = new JsonRpcProvider(ethRPCLink, ethChainId, {
 const resolverPk = "";
 const srcChainResolver = new Wallet(resolverPk, ethProvider);
 
-export const deploySrcEscrow = async (orderParams: OrderParams, order: any) => {
+export const deploySrcEscrow = async (order: Sdk.CrossChainOrder) => {
   const resolverContract = new Resolver("", "");
   const srcChainId = 1;
   const signature = "";
@@ -39,7 +28,7 @@ export const deploySrcEscrow = async (orderParams: OrderParams, order: any) => {
   const secretHashes = secrets.map((s) => Sdk.HashLock.hashSecret(s));
   const leaves = Sdk.HashLock.getMerkleLeaves(secrets);
   const idx = leaves.length - 1;
-  const fillAmount = BigInt(orderParams.amount);
+  const fillAmount = order.takingAmount;
 
   await srcChainResolver.sendTransaction(
     resolverContract.deploySrc(
