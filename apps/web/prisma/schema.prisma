@@ -16,6 +16,9 @@ model Order {
   totalAmount    Float
   collectedAmount Float   @default(0)
   status         String   @default("active") // "active" | "completed" | "cancelled" | "expired"
+  signature      String?  // Optional signature field
+  orderHash      String?  // Optional order hash field
+  secrets        String?  // Optional secrets field (stored as JSON string)
   createdAt      DateTime @default(now())
   expiresAt      DateTime
   updatedAt      DateTime @updatedAt

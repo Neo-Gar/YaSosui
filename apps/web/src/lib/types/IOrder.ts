@@ -7,6 +7,9 @@ export interface IOrder {
   totalAmount: number;
   collectedAmount: number;
   status: string; // Allow string to match Prisma schema
+  signature?: string | null; // Optional signature field
+  orderHash?: string | null; // Optional order hash field
+  secrets?: string | null; // Optional secrets field (stored as JSON string)
   createdAt: Date;
   expiresAt: Date;
   updatedAt: Date;

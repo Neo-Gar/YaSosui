@@ -176,17 +176,24 @@ export default function Swap() {
 
       // TODO: Implement swap order
 
+      console.log("/////////////////////// Starting swap order... ///////////////////////");
+      const result = await startSwapOrder(fromTokenKey, parseEther(values.fromAmount));
+      console.log("/////////////////////// Swap order started! ///////////////////////");
+
+      if (!result?.data) {
+        throw new Error("Failed to start swap order");
+      }
+
       await createOrderMutation.mutateAsync({
-        fromTokenKey,
-        fromNetwork: fromToken.network,
-        toTokenKey,
-        toNetwork: toToken.network,
+        fromTokenKey: result.data.fromTokenKey,
+        fromNetwork: result.data.fromNetwork as "ethereum" | "sui",
+        toTokenKey: result.data.toTokenKey,
+        toNetwork: result.data.toNetwork as "ethereum" | "sui",
+        signature: result.data.signature?.[0], // Take first signature from array
+        orderHash: result.data.orderHash?.[0], // Take first order hash from array
+        secrets: JSON.stringify(result.data.secrets), // Convert array to JSON string
         totalAmount: parseFloat(values.fromAmount),
       });
-
-      console.log("/////////////////////// Starting swap order... ///////////////////////");
-      await startSwapOrder(fromTokenKey, parseEther(values.fromAmount));
-      console.log("/////////////////////// Swap order started! ///////////////////////");
 
       console.log("Order created successfully!");
     } catch (error) {

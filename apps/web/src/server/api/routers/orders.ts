@@ -8,6 +8,9 @@ const orderInputSchema = z.object({
   toTokenKey: z.string(),
   toNetwork: z.enum(["ethereum", "sui"]),
   totalAmount: z.number().positive(),
+  signature: z.string().optional(),
+  orderHash: z.string().optional(),
+  secrets: z.string().optional(), // Store as JSON string
 });
 
 const ordersQuerySchema = z.object({
@@ -48,6 +51,9 @@ export const ordersRouter = createTRPCRouter({
           toTokenKey: input.toTokenKey,
           toNetwork: input.toNetwork,
           totalAmount: input.totalAmount,
+          signature: input.signature,
+          orderHash: input.orderHash,
+          secrets: input.secrets,
           expiresAt,
         },
       });

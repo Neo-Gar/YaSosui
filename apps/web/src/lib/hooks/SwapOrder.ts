@@ -44,6 +44,16 @@ export function useSwapOrder() {
         keypair: Ed25519Keypair
     }
 
+    interface SwapOrder {
+        fromTokenKey: string
+        fromNetwork: string
+        toTokenKey: string
+        toNetwork: string
+        signature: string[]
+        orderHash: string[]
+        secrets: string[]
+    }
+
     const { address: userAddress, chainId, chain } = useAccount()
     const { data: walletClient } = useWalletClient()
     const publicClient = usePublicClient()
@@ -109,6 +119,17 @@ export function useSwapOrder() {
 
             console.log(`[swapOrder]`, `${chainId} Order signed by user`, orderHash)
 
+            return {
+                data: {
+                    fromTokenKey: config.chain.evm.tokens.USDC.address,
+                    fromNetwork: 'ethereum',
+                    toTokenKey: '0x0000000000000000000000000000000000000001',
+                    toNetwork: 'sui',
+                    signature: [signature],
+                    orderHash: [orderHash],
+                    secrets: secrets
+                }
+            }
         } else {
             // Initializing swapOrder by user on SUI
 
