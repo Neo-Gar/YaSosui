@@ -20,6 +20,13 @@ import { config } from '@/lib/config/chainConfig'
 import { SuiClient } from '@mysten/sui/client'
 import { Transaction } from '@mysten/sui/transactions'
 import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519'
+import {
+    serializeCrossChainOrder,
+    deserializeCrossChainOrder,
+    orderToJson,
+    orderFromJson,
+    createOrderWithSerialization
+} from '@/lib/utils/orderSerializer'
 
 // Hook for user's swap Order
 /**
@@ -52,6 +59,22 @@ export function useSwapOrder() {
         signature: string[]
         orderHash: string[]
         secrets: string[]
+    }
+
+    interface PreOrder {
+        escrowFactory: string,
+        maker: string,
+        makingAmount: bigint,
+        takingAmount: bigint,
+        makerAsset: string,
+        takerAsset: string,
+        secret: string,
+        srcChainId: number,
+        dstChainId: number,
+        srcTimestamp: bigint,
+        resolver: string,
+        allowMultipleFills: boolean = false,
+        secrets?: string[]
     }
 
     const { address: userAddress, chainId, chain } = useAccount()
@@ -95,28 +118,66 @@ export function useSwapOrder() {
             const secretHashes = secrets.map((s) => Sdk.HashLock.hashSecret(s))
             const leaves = Sdk.HashLock.getMerkleLeaves(secrets)
 
+
+            const preOrder: PreOrder = {
+                escrowFactory: escrowFactory as `0x${string}`,
+                maker: userAddress as `0x${string}`,
+                makingAmount: parseUnits('100', 6),
+                takingAmount: parseUnits('99', 6),
+                makerAsset: config.chain.evm.tokens.USDC.address,
+                takerAsset: '0x0000000000000000000000000000000000000001', // Placeholder for Sui USDC
+                secret: secrets[0]!, // Use the first secret for multiple fills
+                srcChainId: 1,
+                dstChainId: 10,
+                srcTimestamp: BigInt((await jsonRpcProvider.getBlock('latest'))!.timestamp),
+                resolver: resolver as `0x${string}`,
+                allowMultipleFills: true,
+                secrets: secrets
+            }
             // Create order with multiple fills enabled
             const order = createLocalOrder(
-                escrowFactory as `0x${string}`,
-                userAddress as `0x${string}`,
-                parseUnits('100', 6),
-                parseUnits('99', 6),
-                config.chain.evm.tokens.USDC.address,
-                '0x0000000000000000000000000000000000000001', // Placeholder for Sui USDC
-                secrets[0]!, // Use the first secret for multiple fills
-                1,
-                10,
-                BigInt((await jsonRpcProvider.getBlock('latest'))!.timestamp),
-                resolver as `0x${string}`, /// TODO: Add resolver CONTRACT address
-                true,
-                secrets
+                preOrder.escrowFactory,
+                preOrder.maker,
+                preOrder.makingAmount,
+                preOrder.takingAmount,
+                preOrder.makerAsset,
+                preOrder.takerAsset,
+                preOrder.secret,
+                preOrder.srcChainId,
+                preOrder.dstChainId,
+                preOrder.srcTimestamp,
+                preOrder.resolver,
+                preOrder.allowMultipleFills,
+                preOrder.secrets
             )
             // STEP 2: User signs the order
             const signature = await signOrder(chainId as number, order)
             const orderHash = order.getOrderHash(chainId as number)
 
+
             console.log('[swapOrder] Order', order)
 
+            // Create order with serialization data
+            const { order: serializedOrder, serializationData } = createOrderWithSerialization(
+                preOrder.escrowFactory,
+                preOrder.maker,
+                preOrder.makingAmount,
+                preOrder.takingAmount,
+                preOrder.makerAsset,
+                preOrder.takerAsset,
+                preOrder.secret,
+                preOrder.srcChainId,
+                preOrder.dstChainId,
+                preOrder.srcTimestamp,
+                preOrder.resolver,
+                preOrder.allowMultipleFills,
+                preOrder.secrets
+
+            )
+            // Serialize to JSON
+            const jsonOrder = orderToJson(serializedOrder, serializationData.originalSecret)
+
+            console.log('[swapOrder] Serialized order', jsonOrder)
             console.log(`[swapOrder]`, `${chainId} Order signed by user`, orderHash)
 
             return {
@@ -127,7 +188,8 @@ export function useSwapOrder() {
                     toNetwork: 'sui',
                     signature: [signature],
                     orderHash: [orderHash],
-                    secrets: secrets
+                    secrets: secrets,
+                    jsonOrder: jsonOrder
                 }
             }
         } else {

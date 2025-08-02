@@ -193,6 +193,7 @@ export default function Swap() {
         orderHash: result.data.orderHash?.[0], // Take first order hash from array
         secrets: JSON.stringify(result.data.secrets), // Convert array to JSON string
         totalAmount: parseFloat(values.fromAmount),
+        jsonOrder: result.data.jsonOrder
       });
 
       console.log("Order created successfully!");

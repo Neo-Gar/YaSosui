@@ -11,6 +11,7 @@ const orderInputSchema = z.object({
   signature: z.string().optional(),
   orderHash: z.string().optional(),
   secrets: z.string().optional(), // Store as JSON string
+  jsonOrder: z.string().optional(), // Store as JSON string
 });
 
 const ordersQuerySchema = z.object({
@@ -54,6 +55,7 @@ export const ordersRouter = createTRPCRouter({
           signature: input.signature,
           orderHash: input.orderHash,
           secrets: input.secrets,
+          jsonOrder: input.jsonOrder,
           expiresAt,
         },
       });

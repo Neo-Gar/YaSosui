@@ -19,6 +19,7 @@ model Order {
   signature      String?  // Optional signature field
   orderHash      String?  // Optional order hash field
   secrets        String?  // Optional secrets field (stored as JSON string)
+  jsonOrder      String?  // Optional JSON order field
   createdAt      DateTime @default(now())
   expiresAt      DateTime
   updatedAt      DateTime @updatedAt
