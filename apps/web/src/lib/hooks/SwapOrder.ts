@@ -106,9 +106,9 @@ export function useSwapOrder() {
             // STEP 0: Initializing swapOrder by user on Ethereum
 
             // Get initial balance of user's token
-            const initialBalance = await getBalanceEVMForToken(tokenAddress as `0x${string}`)//await chainUser.tokenBalance(tokenAddress as `0x${string}`)
+            // const initialBalance = await getBalanceEVMForToken(tokenAddress as `0x${string}`)//await chainUser.tokenBalance(tokenAddress as `0x${string}`)
 
-            console.log('[swapOrder] User initialBalance for EVM token ', tokenAddress, initialBalance)
+            //console.log('[swapOrder] User initialBalance for EVM token ', tokenAddress, initialBalance)
             console.log('[swapOrder] // STEP 1: User creates cross-chain order with multiple fill capability')
 
             // STEP 1: User creates cross-chain order with multiple fill capability
@@ -175,7 +175,7 @@ export function useSwapOrder() {
 
             )
             // Serialize to JSON
-            const jsonOrder = orderToJson(serializedOrder, serializationData.originalSecret)
+            const jsonOrder = orderToJson(serializedOrder, serializationData.originalSecret, serializationData.originalSecrets, preOrder.escrowFactory, preOrder.srcChainId, preOrder.dstChainId)
 
             console.log('[swapOrder] Serialized order', jsonOrder)
             console.log(`[swapOrder]`, `${chainId} Order signed by user`, orderHash)

@@ -203,7 +203,7 @@ export default function Swap() {
         jsonOrder: result.data.jsonOrder,
       });
 
-      await new Promise((resolve) => setTimeout(resolve, 60000));
+      await new Promise((resolve) => setTimeout(resolve, 20000));
       setShowPendingOrderModal(false);
 
       console.log("Order created successfully!");

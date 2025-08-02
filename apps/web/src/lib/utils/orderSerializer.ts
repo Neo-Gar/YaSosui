@@ -199,12 +199,22 @@ export function serializeCrossChainOrder(
         allowMultipleFills: order.multipleFillsAllowed,
 
         // Escrow factory - use the factory address from the order creation
-        escrowFactory: escrowFactory || '',
+        escrowFactory: escrowFactory || '0x7cA1DaC2BBc62896A70658019435Cd178c9651B2', // Default escrow factory address
 
         // Original creation parameters
         originalParams: {
             secret: originalSecret,
-            secrets: originalSecrets,
+            secrets: originalSecrets?.map(secret => {
+                // Ensure secrets are properly formatted as hex strings (with or without 0x prefix)
+                if (typeof secret === 'string') {
+                    // Remove 0x prefix if present
+                    const cleanSecret = secret.startsWith('0x') ? secret.slice(2) : secret
+                    if (cleanSecret.length === 64 && /^[0-9a-fA-F]+$/.test(cleanSecret)) {
+                        return cleanSecret
+                    }
+                }
+                throw new Error(`Invalid secret format: ${secret}`)
+            }),
             allowMultipleFills: order.multipleFillsAllowed
         }
     }
@@ -221,32 +231,74 @@ export function deserializeCrossChainOrder(serialized: SerializedCrossChainOrder
 
     if (serialized.originalParams.allowMultipleFills && serialized.originalParams.secrets) {
         // For multiple fills, use the original secrets to recreate the leaves
-        const leaves = Sdk.HashLock.getMerkleLeaves(serialized.originalParams.secrets)
+        // Validate that secrets are in the correct format (64-character hex strings)
+        const validSecrets = serialized.originalParams.secrets.filter(secret => {
+            if (typeof secret !== 'string') return false
+            // Remove 0x prefix if present
+            const cleanSecret = secret.startsWith('0x') ? secret.slice(2) : secret
+            return cleanSecret.length === 64 && /^[0-9a-fA-F]+$/.test(cleanSecret)
+        })
+
+        if (validSecrets.length === 0) {
+            throw new Error('No valid secrets found in serialized order')
+        }
+
+        // Always add 0x prefix for the SDK
+        const cleanedSecrets = validSecrets.map(secret =>
+            secret.startsWith('0x') ? secret : '0x' + secret
+        )
+        const leaves = Sdk.HashLock.getMerkleLeaves(cleanedSecrets)
         hashLock = Sdk.HashLock.forMultipleFills(leaves)
     } else if (serialized.originalParams.secret) {
         // For single fill, use the original secret
-        hashLock = Sdk.HashLock.forSingleFill(serialized.originalParams.secret)
+        // Validate that secret is in the correct format
+        if (typeof serialized.originalParams.secret !== 'string') {
+            throw new Error('Invalid secret format in serialized order')
+        }
+        // Remove 0x prefix if present
+        const cleanSecret = serialized.originalParams.secret.startsWith('0x') ?
+            serialized.originalParams.secret.slice(2) : serialized.originalParams.secret
+        if (cleanSecret.length !== 64 || !/^[0-9a-fA-F]+$/.test(cleanSecret)) {
+            throw new Error('Invalid secret format in serialized order')
+        }
+        hashLock = Sdk.HashLock.forSingleFill(cleanSecret)
     } else {
         // Fallback - try to reconstruct from stored data
         if (serialized.hashLock.type === 'single') {
             hashLock = Sdk.HashLock.forSingleFill(serialized.hashLock.data as string)
         } else {
             const leaves = serialized.hashLock.data as string[]
+
+            // Filter out placeholder values and validate secrets
+            const validLeaves = leaves.filter(leaf =>
+                leaf !== 'placeholder' &&
+                typeof leaf === 'string' &&
+                leaf.length >= 64
+            )
+
+            if (validLeaves.length === 0) {
+                throw new Error('This order was created before the serialization fixes and contains no valid secrets. Please create a new order.')
+            }
+
             // Convert string array to MerkleLeaf array using getMerkleLeaves
-            const merkleLeaves = Sdk.HashLock.getMerkleLeaves(leaves)
+            const merkleLeaves = Sdk.HashLock.getMerkleLeaves(validLeaves)
             hashLock = Sdk.HashLock.forMultipleFills(merkleLeaves)
         }
     }
 
     // Reconstruct time locks
+    const safeTimeLock = (val: string, fallback: bigint) => {
+        const n = BigInt(val)
+        return n === 0n ? fallback : n
+    }
     const timeLocks = Sdk.TimeLocks.new({
-        srcWithdrawal: BigInt(serialized.timeLocks.srcWithdrawal),
-        srcPublicWithdrawal: BigInt(serialized.timeLocks.srcPublicWithdrawal),
-        srcCancellation: BigInt(serialized.timeLocks.srcCancellation),
-        srcPublicCancellation: BigInt(serialized.timeLocks.srcPublicCancellation),
-        dstWithdrawal: BigInt(serialized.timeLocks.dstWithdrawal),
-        dstPublicWithdrawal: BigInt(serialized.timeLocks.dstPublicWithdrawal),
-        dstCancellation: BigInt(serialized.timeLocks.dstCancellation)
+        srcWithdrawal: safeTimeLock(serialized.timeLocks.srcWithdrawal, 10n),
+        srcPublicWithdrawal: safeTimeLock(serialized.timeLocks.srcPublicWithdrawal, 120n),
+        srcCancellation: safeTimeLock(serialized.timeLocks.srcCancellation, 121n),
+        srcPublicCancellation: safeTimeLock(serialized.timeLocks.srcPublicCancellation, 122n),
+        dstWithdrawal: safeTimeLock(serialized.timeLocks.dstWithdrawal, 10n),
+        dstPublicWithdrawal: safeTimeLock(serialized.timeLocks.dstPublicWithdrawal, 100n),
+        dstCancellation: safeTimeLock(serialized.timeLocks.dstCancellation, 101n)
     })
 
     // Reconstruct auction details
@@ -258,21 +310,48 @@ export function deserializeCrossChainOrder(serialized: SerializedCrossChainOrder
     })
 
     // Reconstruct whitelist
-    const whitelist = serialized.whitelist.map(item => ({
+    const whitelist = serialized.whitelist.length > 0 ? serialized.whitelist.map(item => ({
         address: new Address(item.address),
         allowFrom: BigInt(item.allowFrom)
-    }))
+    })) : [
+        // Default whitelist entry if none provided
+        {
+            address: new Address('0x8C03b6684dE6AbdB06C078f1177A158E56d03911'), // Default resolver address
+            allowFrom: 0n
+        }
+    ]
 
     // Create the order using the static new method
+    const validateAddress = (address: string, name: string) => {
+        if (!address || address === "" || address === "0x0000000000000000000000000000000000000000") {
+            if (name === "escrowFactory") {
+                // Use default escrow factory address for backward compatibility
+                return new Address('0x7cA1DaC2BBc62896A70658019435Cd178c9651B2')
+            }
+            throw new Error(`Invalid ${name} address: ${address}`)
+        }
+        return new Address(address)
+    }
+
+    // Validate chain IDs
+    if (serialized.srcChainId === 0 || serialized.dstChainId === 0) {
+        throw new Error(`Invalid chain IDs: srcChainId=${serialized.srcChainId}, dstChainId=${serialized.dstChainId}. Chain IDs must be non-zero.`)
+    }
+
+    // Validate salt - ensure it's within acceptable range
+    const salt = BigInt(serialized.salt)
+    const maxSalt = BigInt('1099511627775') // UINT_40_MAX
+    const validSalt = salt <= maxSalt ? salt : Sdk.randBigInt(1000n)
+
     return Sdk.CrossChainOrder.new(
-        new Address(serialized.escrowFactory),
+        validateAddress(serialized.escrowFactory, "escrowFactory"),
         {
-            salt: BigInt(serialized.salt),
-            maker: new Address(serialized.maker),
+            salt: validSalt,
+            maker: validateAddress(serialized.maker, "maker"),
             makingAmount: BigInt(serialized.makingAmount),
             takingAmount: BigInt(serialized.takingAmount),
-            makerAsset: new Address(serialized.makerAsset),
-            takerAsset: new Address(serialized.takerAsset)
+            makerAsset: validateAddress(serialized.makerAsset, "makerAsset"),
+            takerAsset: validateAddress(serialized.takerAsset, "takerAsset")
         },
         {
             hashLock,
