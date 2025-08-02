@@ -7,6 +7,7 @@ import { TokenLogo } from "@/components/TokenLogo";
 import OrderTimer from "./OrderTimer";
 import { api } from "@/trpc/react";
 import { orderFromJson } from "@/lib/utils/orderSerializer";
+import { useAppKit, useAppKitAccount } from "@reown/appkit/react";
 
 interface OrderCardProps {
   order: IOrderWithTokens;
@@ -16,6 +17,8 @@ export default function OrderCard({ order }: OrderCardProps) {
   const [selectedPercentage, setSelectedPercentage] = useState(25);
   const [isSwapping, setIsSwapping] = useState(false);
   const [localOrder, setLocalOrder] = useState(order);
+  const { address } = useAppKitAccount();
+  const { open: openAppKit } = useAppKit();
 
   // Sync localOrder with order when order changes
   useEffect(() => {
@@ -90,6 +93,10 @@ export default function OrderCard({ order }: OrderCardProps) {
   });
 
   const handleSwap = async () => {
+    if (!address) {
+      openAppKit();
+      return;
+    }
     if (localOrder.status !== "active") return;
 
     // TODO: get the order from the database

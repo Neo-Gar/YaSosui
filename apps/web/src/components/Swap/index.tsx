@@ -18,6 +18,7 @@ import {
 import { useSwapOrder } from "@/lib/hooks/SwapOrder";
 import { parseEther } from "ethers";
 import PendingOrderModal from "../PendingOrderModal";
+import { useAppKit, useAppKitAccount } from "@reown/appkit/react";
 
 const SwapSchema = Yup.object().shape({
   fromAmount: Yup.number()
@@ -28,6 +29,8 @@ const SwapSchema = Yup.object().shape({
 
 export default function Swap() {
   const router = useRouter();
+  const { address } = useAppKitAccount();
+  const { open: openAppKit } = useAppKit();
 
   // Get available tokens for each network
   const ethereumTokens = getAvailableTokensForNetwork("ethereum");
@@ -163,6 +166,10 @@ export default function Swap() {
     fromAmount: string;
     toAmount: string;
   }) => {
+    if (!address) {
+      openAppKit();
+      return;
+    }
     try {
       // Use token addresses directly
       const fromTokenKey = fromToken.address;
@@ -509,25 +516,26 @@ export default function Swap() {
                   whileHover={{
                     scale:
                       isValid &&
-                        values.fromAmount &&
-                        !createOrderMutation.isPending
+                      values.fromAmount &&
+                      !createOrderMutation.isPending
                         ? 1.02
                         : 1,
                   }}
                   whileTap={{
                     scale:
                       isValid &&
-                        values.fromAmount &&
-                        !createOrderMutation.isPending
+                      values.fromAmount &&
+                      !createOrderMutation.isPending
                         ? 0.98
                         : 1,
                   }}
-                  className={`w-full rounded-lg py-3 font-medium text-white shadow-lg transition-all ${isValid &&
+                  className={`w-full rounded-lg py-3 font-medium text-white shadow-lg transition-all ${
+                    isValid &&
                     values.fromAmount &&
                     !createOrderMutation.isPending
-                    ? "bg-gradient-to-r from-[#8F81F8] to-[#7C6EF8] hover:from-[#7C6EF8] hover:to-[#6B5EF7]"
-                    : "cursor-not-allowed bg-gray-300"
-                    }`}
+                      ? "bg-gradient-to-r from-[#8F81F8] to-[#7C6EF8] hover:from-[#7C6EF8] hover:to-[#6B5EF7]"
+                      : "cursor-not-allowed bg-gray-300"
+                  }`}
                 >
                   {createOrderMutation.isPending
                     ? "Creating Order..."

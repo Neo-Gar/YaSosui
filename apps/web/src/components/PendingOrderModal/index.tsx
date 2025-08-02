@@ -55,7 +55,7 @@ export default function PendingOrderModal({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="bg-opacity-50 fixed inset-0 z-50 flex items-center justify-center backdrop-blur-sm"
+            className="bg-opacity-50 fixed inset-0 z-[998] flex items-center justify-center backdrop-blur-sm"
           >
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}

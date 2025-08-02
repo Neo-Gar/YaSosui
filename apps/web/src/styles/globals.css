@@ -131,8 +131,8 @@
 /* Wallet button styles for AppKit */
 appkit-button {
   display: block !important;
-  margin: 8px !important;
-  padding: 5px 8px !important;
+  margin: 2px !important;
+  padding: 1.5px 3px !important;
   background: rgba(255, 255, 255, 0.1) !important;
   border: 1px solid rgba(255, 255, 255, 0.2) !important;
   border-radius: 999px !important;
@@ -141,7 +141,9 @@ appkit-button {
   transition: all 0.2s ease !important;
   font-weight: 500 !important;
   color: rgba(255, 255, 255, 0.9) !important;
-  font-size: 10px !important;
+  font-size: 8px !important;
+  transform: scale(0.8) !important;
+  transform-origin: top right !important;
 }
 
 appkit-button:hover {
@@ -153,4 +155,16 @@ appkit-button:hover {
 appkit-button:active {
   transform: translateY(1px) !important;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* AppKit button wrapper styles */
+.appkit-button-wrapper {
+  transform: scale(0.9) !important;
+  transform-origin: top right !important;
+}
+
+.appkit-button-wrapper appkit-button {
+  margin: 2px !important;
+  padding: 1.5px 3px !important;
+  font-size: 8px !important;
 }

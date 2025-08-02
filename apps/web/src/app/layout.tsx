@@ -26,8 +26,10 @@ export default async function RootLayout({
           <ReownContextProvider cookies={cookies}>
             <FloatingTokens />
             {children}
-            <div className="fixed top-0 right-0 z-50">
-              <appkit-button />
+            <div className="fixed top-5 right-5 z-50">
+              <div className="appkit-button-wrapper">
+                <appkit-button />
+              </div>
             </div>
           </ReownContextProvider>
         </TRPCReactProvider>
