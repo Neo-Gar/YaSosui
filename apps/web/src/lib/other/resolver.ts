@@ -1,7 +1,6 @@
 import { Interface, Signature } from "ethers";
 import type { TransactionRequest } from "ethers";
 import * as Sdk from "@1inch/cross-chain-sdk";
-
 import Contract from "../../../../../packages/solidity/dist/contracts/Resolver.sol/Resolver.json";
 
 export class Resolver {

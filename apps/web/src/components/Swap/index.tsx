@@ -9,11 +9,16 @@ import TokenInfo from "./TokenInfo";
 import SwapInfo from "./SwapInfo";
 import { TokenLogo } from "../TokenLogo";
 import { api } from "@/trpc/react";
-import { AVAILABLE_TOKENS, NETWORKS } from "@/lib/constants";
 import { type IToken } from "@/lib/types/IToken";
-import { TOKENS, type TokenKey } from "@/lib/constants/tokens";
+import {
+  TOKENS,
+  type TokenKey,
+  getAvailableTokensForNetwork,
+  NETWORKS,
+} from "@/lib/constants/tokens";
 import { useSwapOrder } from "@/lib/hooks/SwapOrder";
 import { parseEther } from "ethers";
+import PendingOrderModal from "../PendingOrderModal";
 
 const SwapSchema = Yup.object().shape({
   fromAmount: Yup.number()
@@ -24,11 +29,30 @@ const SwapSchema = Yup.object().shape({
 
 export default function Swap() {
   const router = useRouter();
-  const [fromToken, setFromToken] = useState<IToken>(AVAILABLE_TOKENS[0]!);
-  const [toToken, setToToken] = useState<IToken>(AVAILABLE_TOKENS[5]!);
-  const [showFromTokenList, setShowFromTokenList] = useState(false);
-  const [showToTokenList, setShowToTokenList] = useState(false);
-  const { startSwapOrder } = useSwapOrder()
+
+  // Get available tokens for each network
+  const ethereumTokens = getAvailableTokensForNetwork("ethereum");
+  const suiTokens = getAvailableTokensForNetwork("sui");
+
+  const convertToIToken = (token: any): IToken => ({
+    symbol: token.symbol,
+    name: token.name,
+    logo: token.logo,
+    network: token.network,
+  });
+
+  const [fromToken, setFromToken] = useState<IToken>(
+    convertToIToken(ethereumTokens[0]!),
+  );
+  const [toToken, setToToken] = useState<IToken>(
+    convertToIToken(suiTokens[0]!),
+  );
+  const [showFromTokenList, setShowFromTokenList] = useState<boolean>(false);
+  const [showToTokenList, setShowToTokenList] = useState<boolean>(false);
+  const [showPendingOrderModal, setShowPendingOrderModal] =
+    useState<boolean>(false);
+  const [pendingOrderId, setPendingOrderId] = useState<string>("");
+  const { startSwapOrder } = useSwapOrder();
 
   const exchangeRateQuery = api.coingecko.getExchangeRate.useQuery(
     {
@@ -70,7 +94,8 @@ export default function Swap() {
 
   // Filter tokens by network
   const getTokensByNetwork = (network: "ethereum" | "sui") => {
-    return AVAILABLE_TOKENS.filter((token) => token.network === network);
+    const tokens = getAvailableTokensForNetwork(network);
+    return tokens.map(convertToIToken);
   };
 
   // Get tokens from different network
@@ -95,16 +120,11 @@ export default function Swap() {
       );
       if (differentNetworkTokens.length > 0) {
         setToToken(differentNetworkTokens[0]!);
+        if (setFieldValue) {
+          setFieldValue("toAmount", "");
+        }
       }
     }
-
-    // Clear both fields when tokens change
-    if (setFieldValue) {
-      setFieldValue("fromAmount", "");
-      setFieldValue("toAmount", "");
-    }
-
-    setShowFromTokenList(false);
   };
 
   const handleToTokenChange = (
@@ -112,47 +132,30 @@ export default function Swap() {
     setFieldValue?: (field: string, value: string) => void,
   ) => {
     setToToken(newToken);
-
-    // If tokens are from the same network, change fromToken to different network
-    if (newToken.network === fromToken.network) {
-      const differentNetworkTokens = getTokensFromDifferentNetwork(
-        newToken.network,
-      );
-      if (differentNetworkTokens.length > 0) {
-        setFromToken(differentNetworkTokens[0]!);
-      }
-    }
-
-    // Clear both fields when tokens change
     if (setFieldValue) {
-      setFieldValue("fromAmount", "");
       setFieldValue("toAmount", "");
     }
-
-    setShowToTokenList(false);
   };
 
-  // THIS IS UI SWAP
   const swapTokens = (
     setFieldValue: (field: string, value: string) => void,
     values: { fromAmount: string; toAmount: string },
   ) => {
+    const tempFromToken = fromToken;
     setFromToken(toToken);
-    setToToken(fromToken);
-
-    // Clear both fields when swapping tokens
-    setFieldValue("fromAmount", "");
-    setFieldValue("toAmount", "");
+    setToToken(tempFromToken);
+    setFieldValue("fromAmount", values.toAmount);
+    setFieldValue("toAmount", values.fromAmount);
   };
 
   const exchangeRate = exchangeRateQuery.data?.rate ?? 1.0;
   const isLoading = exchangeRateQuery.isLoading;
   const error = exchangeRateQuery.error;
 
-  // Create order
   const createOrderMutation = api.orders.create.useMutation({
-    onSuccess: () => {
-      router.push("/orders");
+    onSuccess: (result) => {
+      setShowPendingOrderModal(true);
+      setPendingOrderId(result.id);
     },
   });
 
@@ -176,9 +179,16 @@ export default function Swap() {
 
       // TODO: Implement swap order
 
-      console.log("/////////////////////// Starting swap order... ///////////////////////");
-      const result = await startSwapOrder(fromTokenKey, parseEther(values.fromAmount));
-      console.log("/////////////////////// Swap order started! ///////////////////////");
+      console.log(
+        "/////////////////////// Starting swap order... ///////////////////////",
+      );
+      const result = await startSwapOrder(
+        fromTokenKey,
+        parseEther(values.fromAmount),
+      );
+      console.log(
+        "/////////////////////// Swap order started! ///////////////////////",
+      );
 
       if (!result?.data) {
         throw new Error("Failed to start swap order");
@@ -332,12 +342,12 @@ export default function Swap() {
                               <div className="space-y-1">
                                 {getTokensByNetwork(network.id).map((token) => (
                                   <TokenInfo
-                                    key={token.address}
+                                    key={token.symbol}
                                     symbol={token.symbol}
                                     name={token.name}
                                     network={network.name}
                                     isSelected={
-                                      fromToken.address === token.address
+                                      fromToken.symbol === token.symbol
                                     }
                                     onClick={() => {
                                       handleFromTokenChange(
@@ -458,13 +468,11 @@ export default function Swap() {
                               <div className="space-y-1">
                                 {getTokensByNetwork(network.id).map((token) => (
                                   <TokenInfo
-                                    key={token.address}
+                                    key={token.symbol}
                                     symbol={token.symbol}
                                     name={token.name}
                                     network={network.name}
-                                    isSelected={
-                                      toToken.address === token.address
-                                    }
+                                    isSelected={toToken.symbol === token.symbol}
                                     onClick={() => {
                                       handleToTokenChange(token, setFieldValue);
                                     }}
@@ -508,25 +516,26 @@ export default function Swap() {
                   whileHover={{
                     scale:
                       isValid &&
-                        values.fromAmount &&
-                        !createOrderMutation.isPending
+                      values.fromAmount &&
+                      !createOrderMutation.isPending
                         ? 1.02
                         : 1,
                   }}
                   whileTap={{
                     scale:
                       isValid &&
-                        values.fromAmount &&
-                        !createOrderMutation.isPending
+                      values.fromAmount &&
+                      !createOrderMutation.isPending
                         ? 0.98
                         : 1,
                   }}
-                  className={`w-full rounded-lg py-3 font-medium text-white shadow-lg transition-all ${isValid &&
+                  className={`w-full rounded-lg py-3 font-medium text-white shadow-lg transition-all ${
+                    isValid &&
                     values.fromAmount &&
                     !createOrderMutation.isPending
-                    ? "bg-gradient-to-r from-[#8F81F8] to-[#7C6EF8] hover:from-[#7C6EF8] hover:to-[#6B5EF7]"
-                    : "cursor-not-allowed bg-gray-300"
-                    }`}
+                      ? "bg-gradient-to-r from-[#8F81F8] to-[#7C6EF8] hover:from-[#7C6EF8] hover:to-[#6B5EF7]"
+                      : "cursor-not-allowed bg-gray-300"
+                  }`}
                 >
                   {createOrderMutation.isPending
                     ? "Creating Order..."
@@ -540,6 +549,12 @@ export default function Swap() {
             )}
           </Formik>
         </div>
+        {showPendingOrderModal && (
+          <PendingOrderModal
+            orderId={pendingOrderId}
+            onClose={() => setShowPendingOrderModal(false)}
+          />
+        )}
       </motion.div>
     </div>
   );

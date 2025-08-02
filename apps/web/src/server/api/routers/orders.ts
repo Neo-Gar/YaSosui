@@ -38,10 +38,6 @@ export const ordersRouter = createTRPCRouter({
   create: publicProcedure
     .input(orderInputSchema)
     .mutation(async ({ ctx, input }) => {
-      // Check if tokens are available in specified networks
-      getTokenInfo(input.fromTokenKey as any, input.fromNetwork);
-      getTokenInfo(input.toTokenKey as any, input.toNetwork);
-
       // Create order with expiration in one hour
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
 
@@ -156,6 +152,48 @@ export const ordersRouter = createTRPCRouter({
       });
 
       return order;
+    }),
+
+  getById: publicProcedure
+    .input(z.object({ id: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const order = await ctx.db.order.findUnique({
+        where: { id: input.id },
+      });
+
+      if (!order) {
+        throw new Error("Order not found");
+      }
+
+      // Enrich order with token information
+      // const fromToken = getTokenInfo(
+      //   order.fromTokenKey as any,
+      //   order.fromNetwork as any,
+      // );
+      // const toToken = getTokenInfo(
+      //   order.toTokenKey as any,
+      //   order.toNetwork as any,
+      // );
+
+      // DEBUG
+      const fromToken = {
+        symbol: "ETH",
+        name: "Ethereum",
+        logo: "ETH",
+        network: "ethereum",
+      };
+      const toToken = {
+        symbol: "USDC",
+        name: "USDC",
+        logo: "USDC",
+        network: "sui",
+      };
+
+      return {
+        ...order,
+        fromToken,
+        toToken,
+      };
     }),
 
   updateCollectedAmount: publicProcedure
