@@ -103,7 +103,7 @@ export function useSwapOrder() {
                 '0x0000000000000000000000000000000000000001', // Placeholder for Sui USDC
                 secrets[0]!, // Use the first secret for multiple fills
                 1,
-                1,
+                10,
                 BigInt((await src.provider.getBlock('latest'))!.timestamp),
                 src.resolver, /// TODO: Add resolver CONTRACT address
                 true,
@@ -130,6 +130,12 @@ export function useSwapOrder() {
     async function getBalanceEVMForToken(tokenAddress: string): Promise<bigint> {
         if (!publicClient) throw new Error('Public client not available')
 
+        // Handle ETH (native token) - use getBalance instead of contract call
+        if (tokenAddress === 'ETH' || tokenAddress === '0x0000000000000000000000000000000000000000') {
+            return await publicClient.getBalance({ address: userAddress as `0x${string}` })
+        }
+
+        // For ERC20 tokens, use balanceOf contract call
         const balance = await publicClient.readContract({
             address: tokenAddress as `0x${string}`,
             abi: [{
