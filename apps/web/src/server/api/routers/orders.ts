@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { createTRPCRouter, publicProcedure } from "../trpc";
-import { getTokenInfo } from "@/lib/constants/tokens";
+import { getTokenByAddress } from "@/lib/constants/tokens";
 
 const orderInputSchema = z.object({
   fromTokenKey: z.string(),
@@ -116,19 +116,25 @@ export const ordersRouter = createTRPCRouter({
 
       // Enrich orders with token information
       const ordersWithTokens = orders.map((order) => {
-        const fromToken = getTokenInfo(
-          order.fromTokenKey as any,
-          order.fromNetwork as any,
+        const fromToken = getTokenByAddress(
+          order.fromTokenKey,
+          order.fromNetwork as "ethereum" | "sui",
         );
-        const toToken = getTokenInfo(
-          order.toTokenKey as any,
-          order.toNetwork as any,
+        const toToken = getTokenByAddress(
+          order.toTokenKey,
+          order.toNetwork as "ethereum" | "sui",
         );
 
         return {
           ...order,
-          fromToken,
-          toToken,
+          fromToken: {
+            ...fromToken,
+            network: fromToken.network as "ethereum" | "sui",
+          },
+          toToken: {
+            ...toToken,
+            network: toToken.network as "ethereum" | "sui",
+          },
         };
       });
 
@@ -166,33 +172,25 @@ export const ordersRouter = createTRPCRouter({
       }
 
       // Enrich order with token information
-      // const fromToken = getTokenInfo(
-      //   order.fromTokenKey as any,
-      //   order.fromNetwork as any,
-      // );
-      // const toToken = getTokenInfo(
-      //   order.toTokenKey as any,
-      //   order.toNetwork as any,
-      // );
-
-      // DEBUG
-      const fromToken = {
-        symbol: "ETH",
-        name: "Ethereum",
-        logo: "ETH",
-        network: "ethereum",
-      };
-      const toToken = {
-        symbol: "USDC",
-        name: "USDC",
-        logo: "USDC",
-        network: "sui",
-      };
+      const fromToken = getTokenByAddress(
+        order.fromTokenKey,
+        order.fromNetwork as "ethereum" | "sui",
+      );
+      const toToken = getTokenByAddress(
+        order.toTokenKey,
+        order.toNetwork as "ethereum" | "sui",
+      );
 
       return {
         ...order,
-        fromToken,
-        toToken,
+        fromToken: {
+          ...fromToken,
+          network: fromToken.network as "ethereum" | "sui",
+        },
+        toToken: {
+          ...toToken,
+          network: toToken.network as "ethereum" | "sui",
+        },
       };
     }),
 

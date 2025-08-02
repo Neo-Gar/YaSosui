@@ -11,9 +11,8 @@ import { TokenLogo } from "../TokenLogo";
 import { api } from "@/trpc/react";
 import { type IToken } from "@/lib/types/IToken";
 import {
-  TOKENS,
-  type TokenKey,
   getAvailableTokensForNetwork,
+  getTokensFromDifferentNetwork,
   NETWORKS,
 } from "@/lib/constants/tokens";
 import { useSwapOrder } from "@/lib/hooks/SwapOrder";
@@ -38,6 +37,7 @@ export default function Swap() {
     symbol: token.symbol,
     name: token.name,
     logo: token.logo,
+    address: token.address,
     network: token.network,
   });
 
@@ -164,20 +164,9 @@ export default function Swap() {
     toAmount: string;
   }) => {
     try {
-      // Get token keys from symbols
-      const fromTokenKey = Object.keys(TOKENS).find(
-        (key) => TOKENS[key as TokenKey].symbol === fromToken.symbol,
-      ) as TokenKey;
-
-      const toTokenKey = Object.keys(TOKENS).find(
-        (key) => TOKENS[key as TokenKey].symbol === toToken.symbol,
-      ) as TokenKey;
-
-      if (!fromTokenKey || !toTokenKey) {
-        throw new Error("Invalid token selection");
-      }
-
-      // TODO: Implement swap order
+      // Use token addresses directly
+      const fromTokenKey = fromToken.address;
+      const toTokenKey = toToken.address;
 
       console.log(
         "/////////////////////// Starting swap order... ///////////////////////",
@@ -204,7 +193,7 @@ export default function Swap() {
         orderHash: result.data.orderHash?.[0], // Take first order hash from array
         secrets: JSON.stringify(result.data.secrets), // Convert array to JSON string
         totalAmount: parseFloat(values.fromAmount),
-        jsonOrder: result.data.jsonOrder
+        jsonOrder: result.data.jsonOrder,
       });
 
       await new Promise((resolve) => setTimeout(resolve, 60000));

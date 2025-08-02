@@ -10,7 +10,7 @@ export const TokenLogo = memo(
       string,
       React.ComponentType<{ className: string }>
     > = {
-      ETH: EthLogo,
+      WETH: EthLogo, // wETH uses the same logo as ETH
       SUI: SuiLogo,
       USDT: UsdtLogo,
       USDC: UsdcLogo,

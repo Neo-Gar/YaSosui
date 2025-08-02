@@ -25,12 +25,14 @@ export interface IOrderWithTokens
     symbol: string;
     name: string;
     logo: string;
+    address: string;
     network: "ethereum" | "sui";
   };
   toToken: {
     symbol: string;
     name: string;
     logo: string;
+    address: string;
     network: "ethereum" | "sui";
   };
 }
