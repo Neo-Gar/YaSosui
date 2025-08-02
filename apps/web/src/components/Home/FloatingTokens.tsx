@@ -19,7 +19,7 @@ export const FloatingTokens = () => {
     const endX = ((seed * 3) % 100) + Math.sin(seed * 2) * 30;
     const endY = ((seed * 4) % 100) + Math.cos(seed * 2) * 30;
 
-    const logos = ["ETH", "SUI"] as const;
+    const logos = ["WETH", "SUI"] as const;
     const logoType = logos[seed % logos.length] as string;
     const size = 0.6 + ((seed % 100) / 100) * 0.8;
     const opacity = 0.1 + ((seed % 100) / 100) * 0.3;
