@@ -159,7 +159,7 @@ export default function OrderCard({ order }: OrderCardProps) {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="group relative overflow-hidden rounded-2xl bg-white p-6 shadow-lg transition-all duration-300 hover:shadow-xl"
+      className="group relative z-[1] overflow-hidden rounded-2xl bg-white p-6 shadow-lg transition-all duration-300 hover:shadow-xl"
     >
       {/* Status badge */}
       <div className="mb-4 flex items-center justify-between">

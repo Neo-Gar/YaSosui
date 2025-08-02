@@ -38,37 +38,37 @@ export default function OrdersPage() {
 
   // Infinity scroll handler
   useEffect(() => {
+    const ordersContainer = document.querySelector("[data-orders-container]");
+
     const handleScroll = () => {
-      if (
-        window.innerHeight + document.documentElement.scrollTop >=
-        document.documentElement.offsetHeight - 1000
-      ) {
+      if (!ordersContainer) return;
+
+      const { scrollTop, scrollHeight, clientHeight } =
+        ordersContainer as HTMLElement;
+
+      if (scrollTop + clientHeight >= scrollHeight - 100) {
         if (hasNextPage && !isFetchingNextPage) {
           fetchNextPage();
         }
       }
     };
 
-    window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    ordersContainer?.addEventListener("scroll", handleScroll);
+    return () => ordersContainer?.removeEventListener("scroll", handleScroll);
   }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
-        <div className="relative z-30 px-6 py-8">
-          <div className="mx-auto max-w-7xl">
-            <div className="mb-8 text-center">
-              <h1 className="mb-4 text-4xl font-light tracking-tight text-black">
-                Current Orders
-              </h1>
-              <p className="text-lg font-light text-gray-600">
-                Loading your orders...
-              </p>
-            </div>
-            <div className="flex justify-center">
-              <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#8F81F8] border-t-transparent"></div>
-            </div>
+      <div className="flex h-screen items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-50">
+        <div className="text-center">
+          <h1 className="mb-4 text-4xl font-light tracking-tight text-black">
+            Loading your orders...
+          </h1>
+          <p className="text-lg font-light text-gray-600">
+            Please wait while we fetch your orders
+          </p>
+          <div className="mt-8 flex justify-center">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#8F81F8] border-t-transparent"></div>
           </div>
         </div>
       </div>
@@ -77,27 +77,23 @@ export default function OrdersPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
-        <div className="relative z-30 px-6 py-8">
-          <div className="mx-auto max-w-7xl">
-            <div className="mb-8 text-center">
-              <h1 className="mb-4 text-4xl font-light tracking-tight text-black">
-                Error
-              </h1>
-              <p className="text-lg font-light text-red-600">
-                Failed to load orders: {error.message}
-              </p>
-            </div>
-          </div>
+      <div className="flex h-screen items-center justify-center bg-gradient-to-br from-gray-50 via-white to-gray-50">
+        <div className="text-center">
+          <h1 className="mb-4 text-4xl font-light tracking-tight text-black">
+            Error
+          </h1>
+          <p className="text-lg font-light text-red-600">
+            Failed to load orders: {error.message}
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50">
-      {/* Header */}
-      <div className="relative z-30 px-6 py-8">
+    <div className="flex h-screen flex-col bg-gradient-to-br from-gray-50 via-white to-gray-50">
+      {/* Header - Fixed */}
+      <div className="relative z-30 flex-shrink-0 px-6 py-8">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -182,7 +178,12 @@ export default function OrdersPage() {
               </div>
             </div>
           </div>
+        </motion.div>
+      </div>
 
+      {/* Orders container - Scrollable */}
+      <div className="flex-1 overflow-y-auto px-6 pb-8" data-orders-container>
+        <div className="mx-auto max-w-7xl">
           {/* Orders grid */}
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {orders.map((order) => (
@@ -229,7 +230,7 @@ export default function OrdersPage() {
               </p>
             </motion.div>
           )}
-        </motion.div>
+        </div>
       </div>
     </div>
   );
