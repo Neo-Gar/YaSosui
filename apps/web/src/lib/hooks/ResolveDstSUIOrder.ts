@@ -33,12 +33,11 @@ async function pickCoin(owner: string, coinType: string, min: bigint) {
   throw new Error("Not enough balance");
 }
 
-const { user, signAndExecuteTransaction } = useSUIUser();
-
 export const deployDistEscrow = async (
   order: Sdk.CrossChainOrder,
   orderHash: string,
 ): Promise<string> => {
+  const { user, signAndExecuteTransaction } = useSUIUser();
   const hashLock = order.escrowExtension.hashLockInfo;
   const maker = order.maker;
   const taker = order.maker; // ?
@@ -91,6 +90,7 @@ export const deployDistEscrow = async (
 };
 
 export const withdrawDst = async (escrowId: string, secret: string) => {
+  const { signAndExecuteTransaction } = useSUIUser();
   const txbWithdraw = new Transaction();
   txbWithdraw.moveCall({
     target: `${suiFactoryTarget}::escrow_factory::withdraw_escrow`,
