@@ -11,6 +11,7 @@ import { TokenLogo } from "../TokenLogo";
 import { api } from "@/trpc/react";
 import { AVAILABLE_TOKENS, NETWORKS } from "@/lib/constants";
 import { type IToken } from "@/lib/types/IToken";
+import { TOKENS, type TokenKey } from "@/lib/constants/tokens";
 
 const SwapSchema = Yup.object().shape({
   fromAmount: Yup.number()
@@ -145,16 +146,43 @@ export default function Swap() {
   const isLoading = exchangeRateQuery.isLoading;
   const error = exchangeRateQuery.error;
 
-  // TODO: Implement swap logic
+  // Create order
+  const createOrderMutation = api.orders.create.useMutation({
+    onSuccess: () => {
+      router.push("/orders");
+    },
+  });
+
   const handleSubmit = async (values: {
     fromAmount: string;
     toAmount: string;
   }) => {
-    console.log("Swap values:", values);
-    console.log("From token:", fromToken);
-    console.log("To token:", toToken);
-    console.log("Exchange rate:", exchangeRate);
-    console.log("Error:", error);
+    try {
+      // Get token keys from symbols
+      const fromTokenKey = Object.keys(TOKENS).find(
+        (key) => TOKENS[key as TokenKey].symbol === fromToken.symbol,
+      ) as TokenKey;
+
+      const toTokenKey = Object.keys(TOKENS).find(
+        (key) => TOKENS[key as TokenKey].symbol === toToken.symbol,
+      ) as TokenKey;
+
+      if (!fromTokenKey || !toTokenKey) {
+        throw new Error("Invalid token selection");
+      }
+
+      await createOrderMutation.mutateAsync({
+        fromTokenKey,
+        fromNetwork: fromToken.network,
+        toTokenKey,
+        toNetwork: toToken.network,
+        totalAmount: parseFloat(values.fromAmount),
+      });
+
+      console.log("Order created successfully!");
+    } catch (error) {
+      console.error("Failed to create order:", error);
+    }
   };
 
   // Calculate to amount based on exchange rate
@@ -455,24 +483,42 @@ export default function Swap() {
                 {/* Swap button */}
                 <motion.button
                   type="submit"
-                  disabled={!isValid || !values.fromAmount}
+                  disabled={
+                    !isValid ||
+                    !values.fromAmount ||
+                    createOrderMutation.isPending
+                  }
                   whileHover={{
-                    scale: isValid && values.fromAmount ? 1.02 : 1,
+                    scale:
+                      isValid &&
+                      values.fromAmount &&
+                      !createOrderMutation.isPending
+                        ? 1.02
+                        : 1,
                   }}
                   whileTap={{
-                    scale: isValid && values.fromAmount ? 0.98 : 1,
+                    scale:
+                      isValid &&
+                      values.fromAmount &&
+                      !createOrderMutation.isPending
+                        ? 0.98
+                        : 1,
                   }}
                   className={`w-full rounded-lg py-3 font-medium text-white shadow-lg transition-all ${
-                    isValid && values.fromAmount
+                    isValid &&
+                    values.fromAmount &&
+                    !createOrderMutation.isPending
                       ? "bg-gradient-to-r from-[#8F81F8] to-[#7C6EF8] hover:from-[#7C6EF8] hover:to-[#6B5EF7]"
                       : "cursor-not-allowed bg-gray-300"
                   }`}
                 >
-                  {isValid && values.fromAmount
-                    ? isLoading
-                      ? "Loading..."
-                      : "Swap"
-                    : "Enter amount to swap"}
+                  {createOrderMutation.isPending
+                    ? "Creating Order..."
+                    : isValid && values.fromAmount
+                      ? isLoading
+                        ? "Loading..."
+                        : "Create Order"
+                      : "Enter amount to swap"}
                 </motion.button>
               </Form>
             )}

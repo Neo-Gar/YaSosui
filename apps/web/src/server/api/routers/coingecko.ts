@@ -4,10 +4,6 @@ import { createTRPCRouter, publicProcedure } from "../trpc";
 // CoinGecko API base URL
 const COINGECKO_API_BASE = "https://api.coingecko.com/api/v3";
 
-// Cache for API responses
-const cache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_DURATION = 60000; // 1 minute
-
 // Token mappings for CoinGecko IDs
 const SYMBOL_TO_COINGECKO_ID: Record<string, string> = {
   ETH: "ethereum",
@@ -18,44 +14,23 @@ const SYMBOL_TO_COINGECKO_ID: Record<string, string> = {
   SUI: "sui",
 };
 
-// Helper functions
-function getCachedData(key: string): any | null {
-  const cached = cache.get(key);
-  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-    return cached.data;
-  }
-  return null;
-}
-
-function setCachedData(key: string, data: any): void {
-  cache.set(key, { data, timestamp: Date.now() });
-}
-
+// Helper function for API requests
 async function fetchFromCoinGecko(endpoint: string): Promise<any> {
-  const cacheKey = `coingecko_${endpoint}`;
-  const cached = getCachedData(cacheKey);
-  if (cached) return cached;
-
   try {
     const response = await fetch(`${COINGECKO_API_BASE}${endpoint}`);
 
     if (response.status === 429) {
-      console.warn(
-        "CoinGecko rate limit exceeded, using cached data if available",
-      );
-      return getCachedData(cacheKey);
+      throw new Error("CoinGecko rate limit exceeded");
     }
 
     if (!response.ok) {
       throw new Error(`CoinGecko API error: ${response.status}`);
     }
 
-    const data = await response.json();
-    setCachedData(cacheKey, data);
-    return data;
+    return await response.json();
   } catch (error) {
     console.error("Error fetching from CoinGecko:", error);
-    return getCachedData(cacheKey);
+    throw error;
   }
 }
 
@@ -209,19 +184,5 @@ export const coingeckoRouter = createTRPCRouter({
     } catch (error) {
       return { trending: [], error: "Failed to fetch trending tokens" };
     }
-  }),
-
-  // Get cache status
-  getCacheStatus: publicProcedure.query(() => {
-    return {
-      cacheSize: cache.size,
-      cacheKeys: Array.from(cache.keys()),
-    };
-  }),
-
-  // Clear cache
-  clearCache: publicProcedure.mutation(() => {
-    cache.clear();
-    return { success: true };
   }),
 });

@@ -1,5 +1,6 @@
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 import { coingeckoRouter } from "./routers/coingecko";
+import { ordersRouter } from "./routers/orders";
 
 /**
  * This is the primary router for your server.
@@ -8,6 +9,7 @@ import { coingeckoRouter } from "./routers/coingecko";
  */
 export const appRouter = createTRPCRouter({
   coingecko: coingeckoRouter,
+  orders: ordersRouter,
 });
 
 // export type definition of API

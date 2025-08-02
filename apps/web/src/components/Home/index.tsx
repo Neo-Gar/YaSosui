@@ -185,7 +185,7 @@ export default function Home() {
               whileTap={{ scale: 0.98 }}
               onClick={() => {
                 console.log("Button clicked!");
-                router.push("/swap");
+                router.push("/orders");
               }}
             >
               View orders

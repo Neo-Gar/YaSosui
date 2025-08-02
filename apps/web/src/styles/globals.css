@@ -1,4 +1,4 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
 @layer base {
   *,
@@ -69,33 +69,33 @@
 }
 
 @layer base {
-  input[type='number'].appearance-none::-webkit-inner-spin-button,
-  input[type='number'].appearance-none::-webkit-outer-spin-button {
+  input[type="number"].appearance-none::-webkit-inner-spin-button,
+  input[type="number"].appearance-none::-webkit-outer-spin-button {
     -webkit-appearance: none;
     margin: 0;
   }
-  input[type='number'].appearance-none {
+  input[type="number"].appearance-none {
     -moz-appearance: textfield;
   }
 }
 
 @layer utilities {
   /* clears the 'X' from Internet Explorer */
-  input[type='search']::-ms-clear {
+  input[type="search"]::-ms-clear {
     display: none;
     width: 0;
     height: 0;
   }
-  input[type='search']::-ms-reveal {
+  input[type="search"]::-ms-reveal {
     display: none;
     width: 0;
     height: 0;
   }
   /* clears the 'X' from Chrome */
-  input[type='search']::-webkit-search-decoration,
-  input[type='search']::-webkit-search-cancel-button,
-  input[type='search']::-webkit-search-results-button,
-  input[type='search']::-webkit-search-results-decoration {
+  input[type="search"]::-webkit-search-decoration,
+  input[type="search"]::-webkit-search-cancel-button,
+  input[type="search"]::-webkit-search-results-button,
+  input[type="search"]::-webkit-search-results-decoration {
     display: none;
   }
 
@@ -124,7 +124,33 @@
   scrollbar-width: none; /* Firefox */
 }
 
-
 * {
   scroll-behavior: smooth;
+}
+
+/* Wallet button styles for AppKit */
+appkit-button {
+  display: block !important;
+  margin: 8px !important;
+  padding: 5px 8px !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  border-radius: 999px !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1) !important;
+  backdrop-filter: blur(8px) !important;
+  transition: all 0.2s ease !important;
+  font-weight: 500 !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-size: 10px !important;
+}
+
+appkit-button:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
+}
+
+appkit-button:active {
+  transform: translateY(1px) !important;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1) !important;
 }

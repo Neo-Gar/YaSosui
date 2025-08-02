@@ -3,6 +3,8 @@ import "@/styles/globals.css";
 import { type Metadata } from "next";
 import { TRPCReactProvider } from "@/trpc/react";
 import { FloatingTokens } from "@/components/Home/FloatingTokens";
+import ReownContextProvider from "@/context/ReownContext";
+import { headers } from "next/headers";
 
 export const metadata: Metadata = {
   title: "YaSosui swap",
@@ -11,15 +13,23 @@ export const metadata: Metadata = {
   icons: [{ rel: "icon", url: "/favicon.ico" }],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const headersObj = await headers();
+  const cookies = headersObj.get("cookie");
+
   return (
     <html lang="en">
       <body className="relative overflow-hidden">
         <TRPCReactProvider>
-          <FloatingTokens />
-          {children}
+          <ReownContextProvider cookies={cookies}>
+            <FloatingTokens />
+            {children}
+            <div className="fixed top-0 right-0 z-50">
+              <appkit-button />
+            </div>
+          </ReownContextProvider>
         </TRPCReactProvider>
       </body>
     </html>
