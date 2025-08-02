@@ -3,5 +3,4 @@ export interface IToken {
   name: string;
   logo: string;
   network: "ethereum" | "sui";
-  address: string;
 }

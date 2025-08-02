@@ -22,7 +22,15 @@
         "PGUSER",
         "POSTGRES_URL_NO_SSL",
         "POSTGRES_HOST",
-        "NEON_PROJECT_ID"
+        "NEON_PROJECT_ID",
+        "DATABASE_URL",
+        "SRC_CHAIN_RPC",
+        "DST_CHAIN_RPC",
+        "SRC_CHAIN_CREATE_FORK",
+        "DST_CHAIN_CREATE_FORK",
+        "SUI_RPC_URL",
+        "SUI_ESCROW_FACTORY_ADDRESS",
+        "SUI_PRIVATE_KEY"
       ]
     },
     "lint": {
