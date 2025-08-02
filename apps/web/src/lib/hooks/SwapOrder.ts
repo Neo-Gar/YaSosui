@@ -130,15 +130,30 @@ export function useSwapOrder() {
 
       console.log(`[swapOrder]`, `${chainId} Order signed by user`, orderHash);
 
+      // Add your serialization improvements
+      console.log('[swapOrder] Order structure:', {
+        hasEscrowExtension: !!order.escrowExtension,
+        hasExtension: !!order.extension,
+        extensionKeys: order.extension ? Object.keys(order.extension) : 'no extension',
+        escrowExtensionKeys: order.escrowExtension ? Object.keys(order.escrowExtension) : 'no escrowExtension'
+      });
+
+      // Import orderToJson function
+      const { orderToJson } = await import('@/lib/utils/orderSerializer');
+      const jsonOrder = orderToJson(order, secrets[0], secrets, escrowFactory, 1, 10);
+
+      console.log('[swapOrder] Serialized order', jsonOrder);
+
       return {
         data: {
-          fromTokenKey: config.chain.evm.tokens.USDC.address,
+          fromTokenKey: 'USDC',
           fromNetwork: "ethereum",
-          toTokenKey: "0x0000000000000000000000000000000000000001",
+          toTokenKey: 'SUI',
           toNetwork: "sui",
           signature: [signature],
           orderHash: [orderHash],
           secrets: secrets,
+          jsonOrder: jsonOrder
         },
       };
     } else {
