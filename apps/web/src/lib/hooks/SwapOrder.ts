@@ -16,7 +16,7 @@ import {
 } from 'ethers'
 import { uint8ArrayToHex, UINT_40_MAX } from '@1inch/byte-utils'
 import { useAccount, useWalletClient, usePublicClient, useReadContract, useWriteContract } from 'wagmi'
-import { EthersAdapter } from '@reown/appkit-adapter-ethers';
+
 
 
 // Configs
@@ -61,7 +61,7 @@ export function SwapOrder() {
     const { address: userAddress, chainId, chain } = useAccount()
     const { data: walletClient } = useWalletClient()
     const publicClient = usePublicClient()
-    const ethersAdapter = new EthersAdapter()
+
 
     // let srcChainUser: Wallet
     // let srcChainResolver: Wallet
