@@ -7,9 +7,9 @@ import ReownContextProvider from "@/context/ReownContext";
 import { headers } from "next/headers";
 
 export const metadata: Metadata = {
-  title: "YaSosui swap",
+  title: "YasoSui swap",
   description:
-    "YaSosui is a platform for swapping tokens between Sui and Ethereum with 1inch Fusion+",
+    "YasoSui is a platform for swapping tokens between Sui and Ethereum with 1inch Fusion+",
   icons: [{ rel: "icon", url: "/favicon.ico" }],
 };
 
