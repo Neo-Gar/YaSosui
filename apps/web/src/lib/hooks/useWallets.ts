@@ -1,7 +1,9 @@
 import {
   useCurrentAccount,
+  useConnectWallet,
   useDisconnectWallet,
   useSignAndExecuteTransaction,
+  useWallets as useSuiWallets,
 } from "@mysten/dapp-kit";
 import { useAppKitAccount, useDisconnect } from "@reown/appkit/react";
 import { useCallback } from "react";
@@ -9,6 +11,8 @@ import { useCallback } from "react";
 export const useWallets = () => {
   const suiAccount = useCurrentAccount();
   const reownAccount = useAppKitAccount();
+  const availableWallets = useSuiWallets();
+  const { mutateAsync: connectSui } = useConnectWallet();
   const { mutate: disconnectSui } = useDisconnectWallet();
   const { disconnect: disconnectReown } = useDisconnect();
   const { mutateAsync: signAndExecuteTransaction } =
@@ -43,6 +47,33 @@ export const useWallets = () => {
     [suiAccount, reownAccount, disconnectSui, disconnectReown],
   );
 
+  const connectSuiWallet = useCallback(async () => {
+    try {
+      // If already connected, do nothing
+      if (suiAccount) {
+        return suiAccount;
+      }
+
+      // Get the first available wallet or use Sui Wallet as default
+      const firstWallet =
+        availableWallets.find((wallet) => wallet.name === "Sui Wallet") ||
+        availableWallets[0];
+
+      if (!firstWallet) {
+        throw new Error(
+          "No SUI wallets available. Please install a SUI wallet extension.",
+        );
+      }
+
+      // Connect to the wallet
+      await connectSui({ wallet: firstWallet });
+      return suiAccount;
+    } catch (error) {
+      console.error("Error connecting SUI wallet:", error);
+      throw error;
+    }
+  }, [suiAccount, availableWallets, connectSui]);
+
   const activeWallet = suiAccount?.address
     ? { address: suiAccount.address, type: "sui" }
     : reownAccount?.address
@@ -52,6 +83,8 @@ export const useWallets = () => {
   return {
     suiAccount,
     reownAccount,
+    connectSui,
+    connectSuiWallet,
     disconnectAll,
     disconnectOtherWallet,
     signAndExecuteTransaction,
