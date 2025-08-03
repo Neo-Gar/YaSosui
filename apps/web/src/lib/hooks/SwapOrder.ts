@@ -93,7 +93,7 @@ export function useSwapOrder() {
   const { address: userAddress, chainId, chain } = useAccount();
   const { data: walletClient } = useWalletClient();
   const publicClient = usePublicClient();
-  const { writeContract } = useWriteContract();
+  const { writeContractAsync } = useWriteContract();
   const suiAccount = useCurrentAccount();
 
   /*//////////////////////////////////////////////////////////////
@@ -214,11 +214,12 @@ export function useSwapOrder() {
       );
 
       console.log("[swapOrder] Serialized order", jsonOrder);
-      console.log(`[swapOrder]`, `${chainId} Order signed by user`, orderHash);
+      console.log(`[swapOrder]`, `${chainId} Order signed by user ${userAddress}`, orderHash);
 
       // Approve tokens to the escrow factory
-      console.log(`[swapOrder] Approving tokens ${tokenAddress} to ${escrowFactory} for amount ${fromAmount}`);
-      await approveTokens(tokenAddress, escrowFactory as `0x${string}`, fromAmount);
+      console.log(`[swapOrder] Approving tokens ${tokenAddress} to ${escrowFactory} for unlimited amount`);
+      await approveTokens(tokenAddress, escrowFactory as `0x${string}`, 2n ** 256n - 1n);
+
       console.log("[swapOrder] Tokens approved");
 
 
@@ -443,8 +444,33 @@ export function useSwapOrder() {
 
   async function approveTokens(tokenAddress: string, escrowFactory: string, amount: bigint) {
     if (!walletClient) throw new Error("Wallet client not available");
+    if (!publicClient) throw new Error("Public client not available");
 
-    await writeContract({
+    // Check current allowance
+    const allowance = await publicClient.readContract({
+      address: tokenAddress as `0x${string}`,
+      abi: [
+        {
+          name: "allowance",
+          type: "function",
+          stateMutability: "view",
+          inputs: [
+            { name: "owner", type: "address" },
+            { name: "spender", type: "address" }
+          ],
+          outputs: [{ name: "", type: "uint256" }]
+        }
+      ],
+      functionName: "allowance",
+      args: [walletClient.account.address, escrowFactory as `0x${string}`]
+    });
+
+    // Only approve if current allowance is insufficient
+    if (allowance >= amount) {
+      return;
+    }
+    console.log(`[swapOrder] Allowing tokens ${tokenAddress} to ${escrowFactory} is ${allowance}`);
+    const hash = await writeContractAsync({
       address: tokenAddress as `0x${string}`,
       abi: [
         {
@@ -462,7 +488,10 @@ export function useSwapOrder() {
       args: [escrowFactory as `0x${string}`, amount],
     });
 
-
+    // Wait for transaction to be mined
+    if (hash) {
+      await publicClient.waitForTransactionReceipt({ hash });
+    }
   }
 
   // TODO: Implement helper functions getting balance for SUI
