@@ -146,6 +146,11 @@ export default function Swap() {
     newToken: IToken,
     setFieldValue?: (field: string, value: string) => void,
   ) => {
+    // Prevent selection of token from the same network
+    if (newToken.network === fromToken.network) {
+      return;
+    }
+
     setToToken(newToken);
     if (setFieldValue) {
       setFieldValue("toAmount", "");
@@ -165,7 +170,6 @@ export default function Swap() {
 
   const exchangeRate = exchangeRateQuery.data?.rate ?? 1.0;
   const isLoading = exchangeRateQuery.isLoading;
-  const error = exchangeRateQuery.error;
 
   const createOrderMutation = api.orders.create.useMutation({
     onSuccess: (result) => {
@@ -327,16 +331,16 @@ export default function Swap() {
                         whileTap={{ scale: 0.95 }}
                         className="flex items-center space-x-2 rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-purple-50 px-2 py-1.5 transition-all hover:from-blue-100 hover:to-purple-100"
                       >
-                        <motion.div
+                        <div
                           className="h-6 w-6"
-                          animate={{ rotate: showFromTokenList ? 180 : 0 }}
-                          transition={{ duration: 0.2 }}
+                          // animate={{ rotate: showFromTokenList ? 180 : 0 }}
+                          // transition={{ duration: 0.2 }}
                         >
                           <TokenLogo
                             symbol={fromToken.symbol}
                             className="h-full w-full"
                           />
-                        </motion.div>
+                        </div>
                         <div className="text-left">
                           <div className="font-medium text-gray-900">
                             {fromToken.symbol}
@@ -453,16 +457,16 @@ export default function Swap() {
                         whileTap={{ scale: 0.95 }}
                         className="flex items-center space-x-2 rounded-lg border border-purple-200 bg-gradient-to-r from-purple-50 to-blue-50 px-2 py-1.5 transition-all hover:from-purple-100 hover:to-blue-100"
                       >
-                        <motion.div
+                        <div
                           className="h-6 w-6"
-                          animate={{ rotate: showToTokenList ? 180 : 0 }}
-                          transition={{ duration: 0.2 }}
+                          // animate={{ rotate: showToTokenList ? 180 : 0 }}
+                          // transition={{ duration: 0.2 }}
                         >
                           <TokenLogo
                             symbol={toToken.symbol}
                             className="h-full w-full"
                           />
-                        </motion.div>
+                        </div>
                         <div className="text-left">
                           <div className="font-medium text-gray-900">
                             {toToken.symbol}
