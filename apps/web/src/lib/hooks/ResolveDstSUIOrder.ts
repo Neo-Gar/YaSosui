@@ -51,10 +51,10 @@ export const useDeployDistSUIEscrow = () => {
     const maker = order.maker;
     const taker = order.maker; // ?
     const token = order.takerAsset;
-    // const amount = order.takingAmount / 10n ** 12n; // 18 decimals -> 6 decimals
-    const amount = 10n;
-    // const safetyDeposit = order.escrowExtension.srcSafetyDeposit;
-    const safetyDeposit = 10n;
+    const amount = order.takingAmount / 10n ** 12n; // 18 decimals -> 6 decimals
+    // const amount = 10n;
+    const safetyDeposit = order.escrowExtension.srcSafetyDeposit / 10n ** 12n;
+    // const safetyDeposit = 10n;
     const timeLocks = order.escrowExtension.timeLocks;
     // Deploy escrow
     const txbEscrow = new Transaction();

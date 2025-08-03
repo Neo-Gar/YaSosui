@@ -5,6 +5,8 @@ import {
   Interface,
   keccak256,
   Contract,
+  getBytes,
+  hexlify,
 } from "ethers";
 import { Resolver } from "../other/resolver";
 import * as Sdk from "@1inch/cross-chain-sdk";
@@ -18,15 +20,15 @@ import BaseEscrowFactoryContract from "../../../../../packages/solidity/dist/con
 import CustomEscrowFactoryContract from "../../../../../packages/solidity/dist/contracts/CustomEscrowFactory.sol/CustomEscrowFactory.json";
 import CustomEscrowSrcContract from "../../../../../packages/solidity/dist/contracts/CustomEscrowSrc.sol/CustomEscrowSrc.json";
 
-const escrowFactoryAddress = "0x55faF22F4ccCccAC99C124816518adAB93b995d5";
+const escrowFactoryAddress = "0xDE6318b24e0581F78f40Fcfe7caE1A1983d6aacC";
 
 export const useETHEscrow = () => {
-  const { sendTransaction, connect } = useETHUser();
+  const { sendTransaction, connect, user } = useETHUser();
 
   const deploySrcEscrow = async (
     order: Sdk.CrossChainOrder,
     signature: string,
-    secrets: string[],
+    secret: string,
   ) => {
     // Create contract interface
     const contractInterface = new Interface(CustomEscrowFactoryContract.abi);
@@ -38,18 +40,37 @@ export const useETHEscrow = () => {
     // Extract maker from the order
     const maker = order.maker.toString();
 
+    console.log("Maker", maker);
+
     // Extract maker asset and making amount
     const makerAsset = order.makerAsset.toString();
     const makingAmount = order.makingAmount.toString();
 
     // Extract safety deposit - you may need to adjust based on your order structure
-    const safetyDeposit = "0"; // You'll need to determine the correct safety deposit amount
+    const safetyDeposit = order.escrowExtension.srcSafetyDeposit; // You'll need to determine the correct safety deposit amount
 
-    // Get the first secret hashlock from secrets array with null check
-    if (secrets.length === 0) {
-      throw new Error("No secrets provided");
-    }
-    const secretHashlock = keccak256(secrets[secrets.length - 1]!);
+    // Contract stores this hash and compares it with _keccakBytes32(secret) during withdrawal
+    // _keccakBytes32 hashes bytes32, so we need to hash the secret as bytes32, not as string
+    const secretBytes = getBytes(secret); // Convert hex string to bytes
+    const secretHashlock = keccak256(secretBytes); // Hash the bytes, not the string
+    console.log("🔑 [DEPLOY] Secret:", secret);
+    console.log("🔑 [DEPLOY] Secret as bytes:", secretBytes);
+    console.log(
+      "🔑 [DEPLOY] Secret hashlock (keccak256 of bytes):",
+      secretHashlock,
+    );
+    console.log("🔑 [DEPLOY] Secret type:", typeof secret);
+    console.log("🔑 [DEPLOY] Secret length:", secret.length);
+
+    console.log({
+      orderHash,
+      maker,
+      makerAsset,
+      makingAmount,
+      safetyDeposit,
+      chainId: chainId.toString(),
+      secretHashlock,
+    });
 
     // Encode the function call
     const data = contractInterface.encodeFunctionData("deploySrcEscrow", [
@@ -62,6 +83,7 @@ export const useETHEscrow = () => {
       secretHashlock,
     ]);
 
+    console.log("Sending transaction");
     // Send the transaction
     const tx = await sendTransaction({
       to: escrowFactoryAddress,
@@ -69,9 +91,10 @@ export const useETHEscrow = () => {
       value: safetyDeposit, // Send the safety deposit as value
     });
 
+    console.log("Transaction sent. Retrieving escrow address");
     // Use a public JSON-RPC provider for the read-only contract call
     const provider = new JsonRpcProvider(
-      process.env.NEXT_PUBLIC_ETH_RPC_URL || "https://eth.llamarpc.com",
+      process.env.NEXT_PUBLIC_EVM_CHAIN_RPC_URL!,
     );
 
     const contract = new Contract(
@@ -85,6 +108,7 @@ export const useETHEscrow = () => {
       throw new Error("addressOfEscrowSrc method not found on contract");
     }
 
+    console.log("Calling addressOfEscrowSrc");
     const escrowAddress = await contract.addressOfEscrowSrc(orderHash);
 
     return {
@@ -104,7 +128,6 @@ export const useETHEscrow = () => {
 
     // Extract target address (taker) - this should be the address that will receive the tokens
     // For now, using the current user's address as target, but you may need to pass this as parameter
-    const { user } = useETHUser();
     if (!user?.address) {
       throw new Error("User not connected");
     }
@@ -115,14 +138,38 @@ export const useETHEscrow = () => {
     const amount = order.makingAmount.toString();
 
     // Convert string secret to bytes32
-    const secretBytes32 = secret;
+    const secretBytes32 = getBytes(secret);
+
+    console.log("🏦 Escrow address:", srcEscrowAddress);
+    console.log("🔑 [WITHDRAW] Secret:", secret);
+    console.log("🔑 [WITHDRAW] Secret bytes32:", secretBytes32);
+    console.log("🔑 [WITHDRAW] Secret type:", typeof secret);
+    console.log("🔑 [WITHDRAW] Secret length:", secret.length);
+    console.log(
+      "🔑 [WITHDRAW] Hashlock (SDK):",
+      Sdk.HashLock.hashSecret(secret),
+    );
+    console.log(
+      "🔑 [WITHDRAW] Hashlock (keccak256 string):",
+      keccak256(secret),
+    );
+    console.log(
+      "🔑 [WITHDRAW] Hashlock (keccak256 bytes):",
+      keccak256(getBytes(secret)),
+    );
+
+    console.log("Secret bytes32", secretBytes32);
+    console.log("Target", target);
+    console.log("Token", token);
+    console.log("Amount", amount);
+    console.log("srcEscrowAddress", srcEscrowAddress);
 
     // Encode the function call for withdraw
     const data = contractInterface.encodeFunctionData("withdraw", [
       secretBytes32,
       target,
       token,
-      amount,
+      amount, // Use the actual amount from the order
     ]);
 
     // Send the transaction to the specific escrow contract
