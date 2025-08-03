@@ -245,6 +245,33 @@ export default function Swap() {
     }
   };
 
+  const handleFormSubmit = async (
+    values: {
+      fromAmount: string;
+      toAmount: string;
+      toNetworkAddress: string;
+    },
+    { setFieldError, setFieldTouched }: any,
+  ) => {
+    // Validate form manually
+    const errors = await SwapSchema.validate(values, {
+      abortEarly: false,
+      context: { toToken },
+    }).catch((err) => err);
+
+    if (errors.inner) {
+      // Mark all fields as touched and set errors
+      errors.inner.forEach((error: any) => {
+        setFieldTouched(error.path, true);
+        setFieldError(error.path, error.message);
+      });
+      return;
+    }
+
+    // If validation passes, proceed with submit
+    await handleSubmit(values);
+  };
+
   // Calculate to amount based on exchange rate
   const calculateToAmount = (fromAmount: string, setFieldValue: any) => {
     if (fromAmount && !isNaN(Number(fromAmount)) && exchangeRate) {
@@ -288,9 +315,19 @@ export default function Swap() {
             }}
             validationSchema={SwapSchema}
             validationContext={{ toToken }}
-            onSubmit={handleSubmit}
+            validateOnChange={false}
+            validateOnBlur={false}
+            validateOnMount={false}
+            onSubmit={handleFormSubmit}
           >
-            {({ values, setFieldValue, isValid }) => (
+            {({
+              values,
+              setFieldValue,
+              isValid,
+              validateForm,
+              setFieldError,
+              setFieldTouched,
+            }) => (
               <Form className="space-y-4">
                 {/* From */}
                 <div className="space-y-2">
@@ -575,29 +612,29 @@ export default function Swap() {
                 <motion.button
                   type="submit"
                   disabled={
-                    !isValid ||
                     !values.fromAmount ||
+                    !values.toNetworkAddress ||
                     createOrderMutation.isPending
                   }
                   whileHover={{
                     scale:
-                      isValid &&
                       values.fromAmount &&
+                      values.toNetworkAddress &&
                       !createOrderMutation.isPending
                         ? 1.02
                         : 1,
                   }}
                   whileTap={{
                     scale:
-                      isValid &&
                       values.fromAmount &&
+                      values.toNetworkAddress &&
                       !createOrderMutation.isPending
                         ? 0.98
                         : 1,
                   }}
                   className={`w-full rounded-lg py-3 font-medium text-white shadow-lg transition-all ${
-                    isValid &&
                     values.fromAmount &&
+                    values.toNetworkAddress &&
                     !createOrderMutation.isPending
                       ? "bg-gradient-to-r from-[#8F81F8] to-[#7C6EF8] hover:from-[#7C6EF8] hover:to-[#6B5EF7]"
                       : "cursor-not-allowed bg-gray-300"
@@ -605,7 +642,7 @@ export default function Swap() {
                 >
                   {createOrderMutation.isPending
                     ? "Creating Order..."
-                    : isValid && values.fromAmount
+                    : values.fromAmount && values.toNetworkAddress
                       ? isLoading
                         ? "Loading..."
                         : "Create Order"
