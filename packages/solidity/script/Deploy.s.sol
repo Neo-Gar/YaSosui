@@ -29,7 +29,7 @@ contract Deploy is Script {
 
     function deployResolver(TestEscrowFactory testEscrowFactory) public {
         vm.startBroadcast();
-        new Resolver(testEscrowFactory, IOrderMixin(0x111111125421cA6dc452d289314280a0f8842A65), msg.sender);
+        new Resolver(testEscrowFactory, IOrderMixin(0x111111125421cA6dc452d289314280a0f8842A65));
         vm.stopBroadcast();
     }
 }
