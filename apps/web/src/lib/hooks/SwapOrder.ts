@@ -218,10 +218,10 @@ export function useSwapOrder() {
       return {
         data: {
           fromTokenKey: tokenAddress,
-          fromNetwork: "sui",
+          fromNetwork: "ethereum",
           toTokenKey:
             usiTokenAddress || "0x000000000000000000000000000000000000000",
-          toNetwork: "ethereum",
+          toNetwork: "sui",
           signature: [signature],
           orderHash: [orderHash],
           secrets: secrets,
