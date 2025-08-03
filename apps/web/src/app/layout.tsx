@@ -13,7 +13,11 @@ export const metadata: Metadata = {
   title: "YasoSui swap",
   description:
     "YasoSui is a platform for swapping tokens between Sui and Ethereum with 1inch Fusion+",
-  icons: [{ rel: "icon", url: "/favicon.ico" }],
+  icons: [
+    { rel: "icon", url: "/favicon.svg", type: "image/svg+xml" },
+    { rel: "shortcut icon", url: "/favicon.svg", type: "image/svg+xml" },
+    { rel: "apple-touch-icon", url: "/favicon.svg" },
+  ],
 };
 
 export default async function RootLayout({
@@ -24,6 +28,24 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
+      <head>
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="shortcut icon" type="image/svg+xml" href="/favicon.svg" />
+        <link rel="apple-touch-icon" href="/favicon.svg" />
+        <link
+          rel="icon"
+          sizes="16x16"
+          type="image/svg+xml"
+          href="/favicon.svg"
+        />
+        <link
+          rel="icon"
+          sizes="32x32"
+          type="image/svg+xml"
+          href="/favicon.svg"
+        />
+        <meta name="theme-color" content="#8F81F8" />
+      </head>
       <body className="relative overflow-hidden">
         <SuiContext>
           <ReownContextProvider cookies={cookies}>
