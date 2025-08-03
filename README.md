@@ -4,7 +4,7 @@ A comprehensive cross-chain atomic swap platform enabling secure token exchanges
 
 ## 🚀 Overview
 
-YaSosui is a complete cross-chain swap solution that allows users to securely exchange tokens between Ethereum and Sui blockchains using atomic swaps. The platform features hashlock-based security, time-locked escrows, and a user-friendly web interface.
+YaSosui is a complete cross-chain swap solution that allows users to securely exchange tokens between Ethereum and Sui blockchains using atomic swaps. The platform features hashlock-based security, time-locked escrows, and a user-friendly web interface. Built on top of the 1inch Cross-Chain SDK, YaSosui leverages 1inch's battle-tested infrastructure to provide reliable, secure, and efficient cross-chain token swaps.
 
 ## 🏗️ Architecture
 
@@ -28,7 +28,8 @@ YaSosui is a complete cross-chain swap solution that allows users to securely ex
 - **Next.js frontend** with TypeScript and Tailwind CSS
 - **Wallet integration** for both Ethereum and Sui
 - **Real-time order tracking** and swap management
-- **Cross-chain SDK integration** for seamless swaps
+- **1inch Cross-Chain SDK integration** for seamless swaps
+- **1inch Protocol integration** for optimal routing and liquidity aggregation
 
 ## 🛠️ Tech Stack
 
@@ -128,6 +129,10 @@ sui client publish --gas-budget 10000000 --network testnet
 - ⚡ **Real-time order tracking** and status updates
 - 🗄️ **Database persistence** for order management
 - 🔍 **Order history** and status monitoring
+- 🚀 **1inch Protocol integration** for optimal swap routing and best execution prices
+- 💧 **Liquidity aggregation** from multiple DEXs and protocols
+- ⚡ **Gas optimization** through 1inch's advanced routing algorithms
+- 🛡️ **MEV protection** using 1inch's anti-sandwich mechanisms
 
 ## 🏛️ Deployed Contracts
 
@@ -142,6 +147,36 @@ sui client publish --gas-budget 10000000 --network testnet
 
 - **EscrowFactory**: Deployed package ID (update in .env)
 
+## 🚀 How 1inch Protocol Enhances YaSosui
+
+### Optimal Routing & Best Execution
+YaSosui leverages 1inch's advanced routing algorithms to find the most efficient swap paths across multiple DEXs and protocols. This ensures users get the best possible prices for their cross-chain swaps by:
+- **Multi-DEX aggregation**: Scanning hundreds of DEXs and AMMs for optimal liquidity
+- **Split routing**: Breaking large swaps into multiple smaller transactions for better execution
+- **Gas optimization**: Minimizing gas costs through intelligent route selection
+- **Slippage protection**: Using 1inch's sophisticated slippage calculation algorithms
+
+### Liquidity & Market Access
+The 1inch protocol provides access to deep liquidity pools across the entire DeFi ecosystem:
+- **Cross-chain liquidity**: Access to liquidity on both Ethereum and Sui networks
+- **Protocol diversity**: Integration with Uniswap, SushiSwap, Balancer, and hundreds of other DEXs
+- **Real-time pricing**: Live price feeds from multiple sources for accurate rate calculation
+- **Liquidity depth**: Ability to execute large trades without significant price impact
+
+### Security & MEV Protection
+1inch's battle-tested security features protect users from common DeFi risks:
+- **Anti-sandwich protection**: Prevents front-running and back-running attacks
+- **Slippage tolerance**: Configurable slippage limits to prevent unfavorable trades
+- **Transaction simulation**: Pre-flight transaction simulation to catch potential failures
+- **Audited contracts**: All 1inch contracts undergo rigorous security audits
+
+### Cross-Chain Infrastructure
+The 1inch Cross-Chain SDK provides the foundation for seamless cross-chain operations:
+- **Unified API**: Single interface for interacting with multiple blockchains
+- **Transaction management**: Automated handling of cross-chain transaction coordination
+- **Error recovery**: Robust error handling and retry mechanisms
+- **Monitoring**: Real-time transaction status tracking across chains
+
 ## 🔐 Security
 
 - Hashlock verification using SHA3-256
@@ -149,6 +184,7 @@ sui client publish --gas-budget 10000000 --network testnet
 - Deterministic address generation
 - Comprehensive error handling
 - Event emission for off-chain tracking
+- 1inch protocol security features (anti-sandwich, slippage protection)
 
 ## 🧪 Testing
 
@@ -194,5 +230,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - ETHGlobal for the hackathon platform
 - Sui Foundation for blockchain infrastructure
-- 1inch for cross-chain SDK
+- 1inch for cross-chain SDK and protocol integration
 - OpenZeppelin for secure smart contract libraries
