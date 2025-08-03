@@ -18,7 +18,7 @@ import {
 import { useSwapOrder } from "@/lib/hooks/SwapOrder";
 import { parseEther } from "ethers";
 import PendingOrderModal from "../PendingOrderModal";
-import { useAppKit, useAppKitAccount } from "@reown/appkit/react";
+import { useWallets } from "@/lib/hooks/useWallets";
 
 const SwapSchema = Yup.object().shape({
   fromAmount: Yup.number()
@@ -29,8 +29,7 @@ const SwapSchema = Yup.object().shape({
 
 export default function Swap() {
   const router = useRouter();
-  const { address } = useAppKitAccount();
-  const { open: openAppKit } = useAppKit();
+  const { activeWallet } = useWallets();
 
   // Get available tokens for each network
   const ethereumTokens = getAvailableTokensForNetwork("ethereum");
@@ -166,8 +165,8 @@ export default function Swap() {
     fromAmount: string;
     toAmount: string;
   }) => {
-    if (!address) {
-      openAppKit();
+    if (!activeWallet) {
+      alert("Please connect your wallet");
       return;
     }
     try {

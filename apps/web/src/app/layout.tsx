@@ -1,10 +1,13 @@
 import "@/styles/globals.css";
+import "@mysten/dapp-kit/dist/index.css";
 
 import { type Metadata } from "next";
 import { TRPCReactProvider } from "@/trpc/react";
 import { FloatingTokens } from "@/components/Home/FloatingTokens";
 import ReownContextProvider from "@/context/ReownContext";
 import { headers } from "next/headers";
+import SuiContext from "@/context/SuiContext";
+import WalletButton from "@/components/WalletButton";
 
 export const metadata: Metadata = {
   title: "YasoSui swap",
@@ -22,17 +25,17 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className="relative overflow-hidden">
-        <TRPCReactProvider>
+        <SuiContext>
           <ReownContextProvider cookies={cookies}>
-            <FloatingTokens />
-            {children}
-            <div className="fixed top-5 right-5 z-50">
-              <div className="appkit-button-wrapper">
-                <appkit-button />
+            <TRPCReactProvider>
+              <FloatingTokens />
+              {children}
+              <div className="fixed top-5 right-5 z-50">
+                <WalletButton />
               </div>
-            </div>
+            </TRPCReactProvider>
           </ReownContextProvider>
-        </TRPCReactProvider>
+        </SuiContext>
       </body>
     </html>
   );

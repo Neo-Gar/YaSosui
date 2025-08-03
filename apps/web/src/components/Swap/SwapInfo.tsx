@@ -50,10 +50,6 @@ export default function SwapInfo({
             )}
           </span>
         </div>
-        <div className="flex items-center justify-between">
-          <span className="text-gray-600">Fee:</span>
-          <span className="font-medium text-gray-900">{fee}</span>
-        </div>
       </div>
 
       <div className="mt-2 rounded border border-blue-200 bg-blue-50 p-2">

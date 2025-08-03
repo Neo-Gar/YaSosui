@@ -7,7 +7,7 @@ const COINGECKO_API_BASE = "https://api.coingecko.com/api/v3";
 // Token mappings for CoinGecko IDs
 const SYMBOL_TO_COINGECKO_ID: Record<string, string> = {
   ETH: "ethereum",
-  WETH: "weth",
+  wETH: "weth",
   USDT: "tether",
   USDC: "usd-coin",
   DAI: "dai",
