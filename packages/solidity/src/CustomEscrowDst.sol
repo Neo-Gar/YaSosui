@@ -39,7 +39,7 @@ contract CustomEscrowDst is CustomBaseEscrow {
         } else {
             IERC20(token).safeTransfer(target, amount);
         }
-        _ethTransfer(msg.sender, amount);
+        _ethTransfer(msg.sender, address(this).balance);
         emit Withdrawal(secret);
     }
 

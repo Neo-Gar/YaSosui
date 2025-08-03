@@ -41,6 +41,18 @@ interface ICustomBaseEscrow {
     function getFactoryAddress() external view returns (address);
 
     /**
+     * @notice Returns the hashlock of the escrow.
+     */
+    function getHashlock() external view returns (bytes32);
+
+    /**
+     * @notice Sets the hashlock for the escrow.
+     * @dev Only callable by the factory.
+     * @param hashlock The hashlock to set.
+     */
+    function setHashlock(bytes32 hashlock) external;
+
+    /**
      * @notice Withdraws funds to a predetermined recipient.
      * @dev Withdrawal can only be made with secret with hash matches the hashlock.
      * The safety deposit is sent to the caller.

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.23;
 
-import {Test, console} from "forge-std/Test.sol";
+import {Test, console, console2} from "forge-std/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
@@ -11,6 +11,7 @@ import {CustomEscrowFactory} from "../src/CustomEscrowFactory.sol";
 import {CustomEscrowSrc} from "../src/CustomEscrowSrc.sol";
 import {CustomEscrowDst} from "../src/CustomEscrowDst.sol";
 import {ICustomEscrowFactory} from "../src/interfaces/ICustomEscrowFactory.sol";
+import {ICustomBaseEscrow} from "../src/interfaces/ICustomBaseEscrow.sol";
 import {ProxyHashLib} from "../src/ProxyHashLib.sol";
 
 // Mock ERC20 token for testing
@@ -174,6 +175,59 @@ contract CustomEscrowFactoryTest is Test {
 
         address escrow = factory.addressOfEscrowSrc(ORDER_HASH);
         assertTrue(escrow != address(0), "Escrow should be deployed");
+
+        vm.stopPrank();
+    }
+
+    function _keccakBytes32(bytes32 secret) private pure returns (bytes32 ret) {
+        assembly ("memory-safe") {
+            mstore(0, secret)
+            ret := keccak256(0, 0x20)
+        }
+    }
+
+    function test_DeploySrcEscrowAndWithdraw_Success() public {
+        vm.startPrank(alice);
+
+        uint256 balanceBefore = address(alice).balance;
+        // Alice needs to have tokens and approve them to the factory
+        mockToken.transfer(alice, MAKING_AMOUNT);
+        mockToken.approve(address(factory), MAKING_AMOUNT);
+
+        vm.expectEmit(true, true, true, true);
+        ICustomEscrowFactory.DstImmutablesComplement memory expectedComplement = ICustomEscrowFactory
+            .DstImmutablesComplement({
+            maker: alice,
+            amount: MAKING_AMOUNT,
+            token: address(mockToken),
+            safetyDeposit: SAFETY_DEPOSIT,
+            chainId: CHAIN_ID
+        });
+        emit ICustomEscrowFactory.SrcEscrowCreated(
+            factory.addressOfEscrowSrc(ORDER_HASH), ORDER_HASH, alice, expectedComplement
+        );
+
+        factory.deploySrcEscrow{value: SAFETY_DEPOSIT}(
+            ORDER_HASH,
+            alice,
+            address(mockToken),
+            MAKING_AMOUNT,
+            SAFETY_DEPOSIT,
+            CHAIN_ID,
+            _keccakBytes32(SECRET_HASHLOCK)
+        );
+
+        address escrow = factory.addressOfEscrowSrc(ORDER_HASH);
+        assertEq(_keccakBytes32(SECRET_HASHLOCK), ICustomBaseEscrow(escrow).getHashlock());
+        assertTrue(escrow != address(0), "Escrow should be deployed");
+
+        vm.expectEmit(true, true, true, true);
+        emit ICustomBaseEscrow.Withdrawal(SECRET_HASHLOCK);
+
+        CustomEscrowSrc(escrow).withdraw(SECRET_HASHLOCK, alice, address(mockToken), MAKING_AMOUNT);
+
+        uint256 balanceAfter = address(alice).balance;
+        assertEq(balanceAfter, balanceBefore, "Balance should be the same after withdrawal");
 
         vm.stopPrank();
     }
