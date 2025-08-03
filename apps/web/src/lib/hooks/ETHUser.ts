@@ -89,14 +89,22 @@ const useETHUser = (): ETHUserHookReturn => {
       throw new Error("MetaMask is not installed");
     }
 
-    if (!user) {
+    // Get current account directly from provider instead of relying on state
+    let currentAddress: string;
+    try {
+      const accounts = await provider.request({ method: "eth_accounts" });
+      if (!accounts || accounts.length === 0) {
+        throw new Error("Wallet is not connected");
+      }
+      currentAddress = accounts[0];
+    } catch (err) {
       throw new Error("Wallet is not connected");
     }
 
     try {
       const balance = await provider.request({
         method: "eth_getBalance",
-        params: [user.address, "latest"],
+        params: [currentAddress, "latest"],
       });
       return balance;
     } catch (err) {
@@ -105,7 +113,7 @@ const useETHUser = (): ETHUserHookReturn => {
         err instanceof Error ? err.message : "Failed to get balance",
       );
     }
-  }, [getMetaMaskProvider, user]);
+  }, [getMetaMaskProvider]);
 
   // Connect to MetaMask wallet
   const connect = useCallback(async (): Promise<void> => {
@@ -143,6 +151,8 @@ const useETHUser = (): ETHUserHookReturn => {
             chainId: chainIdResponse,
             balance: balance || undefined,
           };
+
+          console.log("ethUser: ", ethUser);
 
           setUser(ethUser);
         }
@@ -276,6 +286,38 @@ const useETHUser = (): ETHUserHookReturn => {
       throw new Error("Transaction must have a 'to' address");
     }
 
+    // Ensure value is properly formatted as hex string
+    if (normalizedTx.value !== undefined && normalizedTx.value !== null) {
+      if (typeof normalizedTx.value === "bigint") {
+        normalizedTx.value = `0x${(normalizedTx.value as bigint).toString(16)}`;
+      } else if (typeof normalizedTx.value === "number") {
+        normalizedTx.value = `0x${(normalizedTx.value as number).toString(16)}`;
+      } else if (
+        typeof normalizedTx.value === "string" &&
+        !(normalizedTx.value as string).startsWith("0x")
+      ) {
+        // If it's a decimal string, convert to hex
+        const numValue = parseInt(normalizedTx.value as string, 10);
+        if (!isNaN(numValue)) {
+          normalizedTx.value = `0x${numValue.toString(16)}`;
+        }
+      }
+    }
+
+    // Ensure gas fields are properly formatted
+    if (
+      normalizedTx.gas !== undefined &&
+      typeof normalizedTx.gas === "bigint"
+    ) {
+      normalizedTx.gas = `0x${(normalizedTx.gas as bigint).toString(16)}`;
+    }
+    if (
+      normalizedTx.gasPrice !== undefined &&
+      typeof normalizedTx.gasPrice === "bigint"
+    ) {
+      normalizedTx.gasPrice = `0x${(normalizedTx.gasPrice as bigint).toString(16)}`;
+    }
+
     return normalizedTx;
   };
 
@@ -290,7 +332,15 @@ const useETHUser = (): ETHUserHookReturn => {
         throw new Error("MetaMask is not installed");
       }
 
-      if (!user) {
+      // Get current account directly from provider instead of relying on state
+      let currentAddress: string;
+      try {
+        const accounts = await provider.request({ method: "eth_accounts" });
+        if (!accounts || accounts.length === 0) {
+          throw new Error("Wallet is not connected");
+        }
+        currentAddress = accounts[0];
+      } catch (err) {
         throw new Error("Wallet is not connected");
       }
 
@@ -300,11 +350,21 @@ const useETHUser = (): ETHUserHookReturn => {
         // Normalize the transaction object
         const normalizedTx = await normalizeTransaction(transaction);
 
+        console.log("=== DEBUG: Original transaction ===", transaction);
+        console.log("=== DEBUG: Normalized transaction ===", normalizedTx);
+        console.log("=== DEBUG: Transaction fields types ===", {
+          to: typeof normalizedTx.to,
+          value: typeof normalizedTx.value,
+          data: typeof normalizedTx.data,
+          gas: typeof normalizedTx.gas,
+          gasPrice: typeof normalizedTx.gasPrice,
+        });
+
         const txHash = await provider.request({
           method: "eth_sendTransaction",
           params: [
             {
-              from: user.address,
+              from: currentAddress,
               ...normalizedTx,
             },
           ],
@@ -318,7 +378,7 @@ const useETHUser = (): ETHUserHookReturn => {
         throw new Error(errorMessage);
       }
     },
-    [getMetaMaskProvider, user],
+    [getMetaMaskProvider],
   );
 
   // Sign message
@@ -330,7 +390,15 @@ const useETHUser = (): ETHUserHookReturn => {
         throw new Error("MetaMask is not installed");
       }
 
-      if (!user) {
+      // Get current account directly from provider instead of relying on state
+      let currentAddress: string;
+      try {
+        const accounts = await provider.request({ method: "eth_accounts" });
+        if (!accounts || accounts.length === 0) {
+          throw new Error("Wallet is not connected");
+        }
+        currentAddress = accounts[0];
+      } catch (err) {
         throw new Error("Wallet is not connected");
       }
 
@@ -338,7 +406,7 @@ const useETHUser = (): ETHUserHookReturn => {
         setError(null);
         const signature = await provider.request({
           method: "personal_sign",
-          params: [message, user.address],
+          params: [message, currentAddress],
         });
         return signature;
       } catch (err) {
@@ -349,7 +417,7 @@ const useETHUser = (): ETHUserHookReturn => {
         throw new Error(errorMessage);
       }
     },
-    [getMetaMaskProvider, user],
+    [getMetaMaskProvider],
   );
 
   // Sign typed data
@@ -361,7 +429,15 @@ const useETHUser = (): ETHUserHookReturn => {
         throw new Error("MetaMask is not installed");
       }
 
-      if (!user) {
+      // Get current account directly from provider instead of relying on state
+      let currentAddress: string;
+      try {
+        const accounts = await provider.request({ method: "eth_accounts" });
+        if (!accounts || accounts.length === 0) {
+          throw new Error("Wallet is not connected");
+        }
+        currentAddress = accounts[0];
+      } catch (err) {
         throw new Error("Wallet is not connected");
       }
 
@@ -369,7 +445,7 @@ const useETHUser = (): ETHUserHookReturn => {
         setError(null);
         const signature = await provider.request({
           method: "eth_signTypedData_v4",
-          params: [user.address, JSON.stringify(typedData)],
+          params: [currentAddress, JSON.stringify(typedData)],
         });
         return signature;
       } catch (err) {
@@ -380,7 +456,7 @@ const useETHUser = (): ETHUserHookReturn => {
         throw new Error(errorMessage);
       }
     },
-    [getMetaMaskProvider, user],
+    [getMetaMaskProvider],
   );
 
   // Handle account and chain changes
@@ -414,13 +490,20 @@ const useETHUser = (): ETHUserHookReturn => {
     };
 
     const handleChainChanged = async (chainId: string) => {
-      if (user) {
-        const balance = await provider.request({
-          method: "eth_getBalance",
-          params: [user.address, "latest"],
-        });
+      // Get current account directly from provider instead of relying on state
+      try {
+        const accounts = await provider.request({ method: "eth_accounts" });
+        if (accounts && accounts.length > 0) {
+          const address = accounts[0];
+          const balance = await provider.request({
+            method: "eth_getBalance",
+            params: [address, "latest"],
+          });
 
-        setUser((prev) => (prev ? { ...prev, chainId, balance } : null));
+          setUser((prev) => (prev ? { ...prev, chainId, balance } : null));
+        }
+      } catch (err) {
+        console.error("Failed to handle chain change:", err);
       }
     };
 
@@ -469,7 +552,7 @@ const useETHUser = (): ETHUserHookReturn => {
       provider.removeListener("chainChanged", handleChainChanged);
       provider.removeListener("disconnect", handleDisconnect);
     };
-  }, [getMetaMaskProvider, user]);
+  }, [getMetaMaskProvider]);
 
   return {
     user,

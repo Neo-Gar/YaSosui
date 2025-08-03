@@ -8,6 +8,8 @@ import OrderTimer from "./OrderTimer";
 import { api } from "@/trpc/react";
 import { orderFromJson } from "@/lib/utils/orderSerializer";
 import { useWallets } from "@/lib/hooks/useWallets";
+import { useAppKit, useAppKitAccount } from "@reown/appkit/react";
+import { useExecuteEthToSUI } from "@/lib/hooks/ResolverOrder";
 
 interface OrderCardProps {
   order: IOrderWithTokens;
@@ -18,6 +20,8 @@ export default function OrderCard({ order }: OrderCardProps) {
   const [isSwapping, setIsSwapping] = useState(false);
   const [localOrder, setLocalOrder] = useState(order);
   const { activeWallet } = useWallets();
+
+  const { executeOrder } = useExecuteEthToSUI();
 
   // Sync localOrder with order when order changes
   useEffect(() => {
@@ -112,37 +116,43 @@ export default function OrderCard({ order }: OrderCardProps) {
     const orderRecovered = orderFromJson(localOrder.jsonOrder ?? "");
     console.log(">>> orderRecovered: ", orderRecovered);
 
-    // Check if selected percentage is available
-    if (!availableForPayment.includes(selectedPercentage)) {
-      return;
-    }
+    await executeOrder(
+      orderRecovered,
+      localOrder.orderHash!,
+      localOrder.signature!,
+    );
 
-    setIsSwapping(true);
-    try {
-      // Simulate delay
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+    // // Check if selected percentage is available
+    // if (!availableForPayment.includes(selectedPercentage)) {
+    //   return;
+    // }
 
-      // Update collected amount in database
-      const targetAmount = (selectedPercentage / 100) * localOrder.totalAmount;
-      const newCollectedAmount = targetAmount;
+    // setIsSwapping(true);
+    // try {
+    //   // Simulate delay
+    //   await new Promise((resolve) => setTimeout(resolve, 2000));
 
-      updateCollectedAmountMutation.mutate({
-        id: localOrder.id,
-        collectedAmount: newCollectedAmount,
-      });
+    //   // Update collected amount in database
+    //   const targetAmount = (selectedPercentage / 100) * localOrder.totalAmount;
+    //   const newCollectedAmount = targetAmount;
 
-      // Update local state
-      setLocalOrder({
-        ...localOrder,
-        collectedAmount: newCollectedAmount,
-        status:
-          newCollectedAmount >= localOrder.totalAmount ? "completed" : "active",
-      });
-    } catch (error) {
-      console.error("Swap failed:", error);
-    } finally {
-      setIsSwapping(false);
-    }
+    //   updateCollectedAmountMutation.mutate({
+    //     id: localOrder.id,
+    //     collectedAmount: newCollectedAmount,
+    //   });
+
+    //   // Update local state
+    //   setLocalOrder({
+    //     ...localOrder,
+    //     collectedAmount: newCollectedAmount,
+    //     status:
+    //       newCollectedAmount >= localOrder.totalAmount ? "completed" : "active",
+    //   });
+    // } catch (error) {
+    //   console.error("Swap failed:", error);
+    // } finally {
+    //   setIsSwapping(false);
+    // }
   };
 
   const getStatusColor = (status: string) => {

@@ -163,27 +163,33 @@ export const getTransactionEvents = async (txHash: string) => {
   }
 };
 
-export const deploySrcEscrow = async (
-  order: Sdk.CrossChainOrder,
-  signature: string,
-  secrets: string[],
-) => {
-  const { sendTransaction } = useETHUser();
-  const resolverContract = new Resolver("", "");
-  const srcChainId = 1;
-  const escrowFactory = "0x7cA1DaC2BBc62896A70658019435Cd178c9651B2";
+export const useETHEscrow = () => {
+  const { sendTransaction, connect } = useETHUser();
 
-  const secretHashes = secrets.map((s) => Sdk.HashLock.hashSecret(s));
-  const leaves = Sdk.HashLock.getMerkleLeaves(secrets);
-  const idx = leaves.length - 1;
-  const fillAmount = order.takingAmount;
+  const deploySrcEscrow = async (
+    order: Sdk.CrossChainOrder,
+    signature: string,
+    secrets: string[],
+  ) => {
+    const resolverContract = new Resolver(
+      "0x4F38502D422d500f4a53294dD0074eD47319065d",
+      "0x0000000000000000000000000000000000000000", // Fake address
+    );
+    const srcChainId = 1;
+    const escrowFactory = "0x7cA1DaC2BBc62896A70658019435Cd178c9651B2";
 
-  const txHash = await sendTransaction(
-    resolverContract.deploySrc(
+    const secretHashes = secrets.map((s) => Sdk.HashLock.hashSecret(s));
+    const leaves = Sdk.HashLock.getMerkleLeaves(secrets);
+    const idx = leaves.length - 1;
+    const fillAmount = order.takingAmount;
+
+    console.log("secretHashes: ", secretHashes);
+
+    const debugdata = {
       srcChainId,
       order,
       signature,
-      Sdk.TakerTraits.default()
+      takerTraits: Sdk.TakerTraits.default()
         .setExtension(order.extension)
         .setInteraction(
           // Set up multiple fill interaction with Merkle proof
@@ -198,39 +204,69 @@ export const deploySrcEscrow = async (
         .setAmountMode(Sdk.AmountMode.maker)
         .setAmountThreshold(order.takingAmount),
       fillAmount,
-      Sdk.HashLock.fromString(secretHashes[idx]!),
-    ),
-  );
+      hashLock: Sdk.HashLock.fromString(secretHashes[idx]!),
+    };
 
-  console.log("Transaction hash:", txHash);
+    console.log("debugdata: ", debugdata);
 
-  // Get events from the transaction using the separate function
-  const result = await getTransactionEvents(txHash);
+    await connect();
 
-  const dstEscrowAddress = result.dstEscrowCreatedEvents?.[0]?.address; // ?
-
-  return dstEscrowAddress;
-};
-
-export const withdrawSrc = async (
-  order: Sdk.CrossChainOrder,
-  srcEscrowAddress: string,
-  secret: string,
-) => {
-  const { sendTransaction } = useETHUser();
-  const resolverContract = new Resolver("", "");
-
-  const resolverWithdrawHash = await sendTransaction(
-    resolverContract.withdraw(
-      "src",
-      new Sdk.Address(srcEscrowAddress),
-      secret,
-      order.toSrcImmutables(
-        1,
-        new Sdk.Address(srcEscrowAddress),
-        order.takingAmount,
-        Sdk.HashLock.fromString(secret),
+    const txHash = await sendTransaction(
+      resolverContract.deploySrc(
+        srcChainId,
+        order,
+        signature,
+        Sdk.TakerTraits.default()
+          .setExtension(order.extension)
+          .setInteraction(
+            // Set up multiple fill interaction with Merkle proof
+            new Sdk.EscrowFactory(
+              new Address(escrowFactory),
+            ).getMultipleFillInteraction(
+              Sdk.HashLock.getProof(leaves, idx),
+              idx,
+              secretHashes[idx]!,
+            ),
+          )
+          .setAmountMode(Sdk.AmountMode.maker)
+          .setAmountThreshold(order.takingAmount),
+        fillAmount,
+        Sdk.HashLock.fromString(secretHashes[idx]!),
       ),
-    ),
-  );
+    );
+
+    console.log("Transaction hash:", txHash);
+
+    // Get events from the transaction using the separate function
+    const result = await getTransactionEvents(txHash);
+
+    const dstEscrowAddress = result.dstEscrowCreatedEvents?.[0]?.address; // ?
+
+    return dstEscrowAddress;
+  };
+
+  const withdrawSrc = async (
+    order: Sdk.CrossChainOrder,
+    srcEscrowAddress: string,
+    secret: string,
+  ) => {
+    const { sendTransaction } = useETHUser();
+    const resolverContract = new Resolver("", "");
+
+    const resolverWithdrawHash = await sendTransaction(
+      resolverContract.withdraw(
+        "src",
+        new Sdk.Address(srcEscrowAddress),
+        secret,
+        order.toSrcImmutables(
+          1,
+          new Sdk.Address(srcEscrowAddress),
+          order.takingAmount,
+          Sdk.HashLock.fromString(secret),
+        ),
+      ),
+    );
+  };
+
+  return { deploySrcEscrow, withdrawSrc };
 };
