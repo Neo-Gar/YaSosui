@@ -4,12 +4,12 @@ The following contracts have been deployed to the Sepolia testnet (Chain ID: 111
 
 ### Main Contracts
 - **TestEscrowFactory**: `0x7ca1dac2bbc62896a70658019435cd178c9651b2`
-- **CustomEscrowFactory**: `0xe9754c50880db91939814beb8b758e6b68709cd0`
+- **CustomEscrowFactory**: `0x55faf22f4cccccac99c124816518adab93b995d5`
 - **Resolver**: `0x4f38502d422d500f4a53294dd0074ed47319065d`
 
 ### Additional Contracts
-- **CustomBaseEscrow**: `0x5bbe65544ce4af14a3f1912e46e8502ae593c4dc`
-- **CustomEscrowDst**: `0xf3592b3bf56921fb6513fb28ccefa47872371f4e`
+- **CustomBaseEscrow**: `0x298da342384711504c33c8dbfdacc0265b7e68ee`
+- **CustomEscrowDst**: `0xa1852102b3da6e3b13d45b39f5c6fc2e64585a49`
 - **TestEscrowSrc**: `0x11e3a710d7a0b9c05e54f68084f174ba7f827aa3`
 - **TestEscrowDst**: `0x24595ed75534bf2b60f06611070485b25450d745`
 - **TestEscrowSrc2**: `0x48996defaa7cb22511e7b9da225c276f44a08327`

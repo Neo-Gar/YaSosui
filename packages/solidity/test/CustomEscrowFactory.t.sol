@@ -164,7 +164,9 @@ contract CustomEscrowFactoryTest is Test {
             safetyDeposit: SAFETY_DEPOSIT,
             chainId: CHAIN_ID
         });
-        emit ICustomEscrowFactory.SrcEscrowCreated(expectedComplement);
+        emit ICustomEscrowFactory.SrcEscrowCreated(
+            factory.addressOfEscrowSrc(ORDER_HASH), ORDER_HASH, alice, expectedComplement
+        );
 
         factory.deploySrcEscrow{value: SAFETY_DEPOSIT}(
             ORDER_HASH, alice, address(mockToken), MAKING_AMOUNT, SAFETY_DEPOSIT, CHAIN_ID, SECRET_HASHLOCK
@@ -192,7 +194,9 @@ contract CustomEscrowFactoryTest is Test {
             safetyDeposit: 0,
             chainId: CHAIN_ID
         });
-        emit ICustomEscrowFactory.SrcEscrowCreated(expectedComplement);
+        emit ICustomEscrowFactory.SrcEscrowCreated(
+            factory.addressOfEscrowSrc(ORDER_HASH), ORDER_HASH, alice, expectedComplement
+        );
 
         factory.deploySrcEscrow{value: 0}(
             ORDER_HASH,
@@ -224,7 +228,9 @@ contract CustomEscrowFactoryTest is Test {
             safetyDeposit: SAFETY_DEPOSIT,
             chainId: CHAIN_ID
         });
-        emit ICustomEscrowFactory.SrcEscrowCreated(expectedComplement);
+        emit ICustomEscrowFactory.SrcEscrowCreated(
+            factory.addressOfEscrowSrc(ORDER_HASH), ORDER_HASH, alice, expectedComplement
+        );
 
         factory.deploySrcEscrow{value: SAFETY_DEPOSIT}(
             ORDER_HASH,

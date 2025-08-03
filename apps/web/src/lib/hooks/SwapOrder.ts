@@ -93,6 +93,7 @@ export function useSwapOrder() {
   const { address: userAddress, chainId, chain } = useAccount();
   const { data: walletClient } = useWalletClient();
   const publicClient = usePublicClient();
+  const { writeContract } = useWriteContract();
   const suiAccount = useCurrentAccount();
 
   /*//////////////////////////////////////////////////////////////
@@ -214,6 +215,11 @@ export function useSwapOrder() {
 
       console.log("[swapOrder] Serialized order", jsonOrder);
       console.log(`[swapOrder]`, `${chainId} Order signed by user`, orderHash);
+
+      // Approve tokens to the escrow factory
+      await approveTokens(tokenAddress, escrowFactory as `0x${string}`, fromAmount);
+      console.log("[swapOrder] Tokens approved");
+
 
       return {
         data: {
@@ -432,6 +438,30 @@ export function useSwapOrder() {
     const signatureResult = await signSuiMessage({ message: messageBytes });
 
     return signatureResult.signature;
+  }
+
+  async function approveTokens(tokenAddress: string, escrowFactory: string, amount: bigint) {
+    if (!walletClient) throw new Error("Wallet client not available");
+
+    await writeContract({
+      address: tokenAddress as `0x${string}`,
+      abi: [
+        {
+          name: "approve",
+          type: "function",
+          stateMutability: "nonpayable",
+          inputs: [
+            { name: "spender", type: "address" },
+            { name: "value", type: "uint256" },
+          ],
+          outputs: [],
+        },
+      ],
+      functionName: "approve",
+      args: [escrowFactory as `0x${string}`, amount],
+    });
+
+
   }
 
   // TODO: Implement helper functions getting balance for SUI

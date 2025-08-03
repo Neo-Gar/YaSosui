@@ -50,13 +50,13 @@ contract CustomEscrowFactory is ICustomEscrowFactory {
             chainId: chainId
         });
 
-        emit SrcEscrowCreated(immutablesComplement);
-
         bytes32 salt = orderHash;
 
         address escrow = _deployEscrow(salt, msg.value, ESCROW_SRC_IMPLEMENTATION);
 
         CustomEscrowSrc(escrow).setHashlock(secretHashlock);
+
+        emit SrcEscrowCreated(escrow, orderHash, msg.sender, immutablesComplement);
 
         if (makerAsset != address(0)) {
             IERC20(makerAsset).safeTransferFrom(address(maker), escrow, makingAmount);
@@ -77,14 +77,14 @@ contract CustomEscrowFactory is ICustomEscrowFactory {
      * @param token The token address to be deposited.
      * @param amount The amount of tokens to be deposited.
      * @param safetyDeposit The safety deposit amount in native tokens.
-     * @param orderHashlock The hashlock for the order.
+     * @param orderHash The hashlock for the order.
      * @param secretHashlock The hashlock for the secret.
      */
     function deployDstEscrow(
         address token,
         uint256 amount,
         uint256 safetyDeposit,
-        bytes32 orderHashlock,
+        bytes32 orderHash,
         bytes32 secretHashlock
     ) external payable {
         uint256 nativeAmount = safetyDeposit;
@@ -93,7 +93,7 @@ contract CustomEscrowFactory is ICustomEscrowFactory {
         }
         if (msg.value != nativeAmount) revert InsufficientEscrowBalance();
 
-        bytes32 salt = orderHashlock;
+        bytes32 salt = orderHash;
         address escrow = _deployEscrow(salt, msg.value, ESCROW_DST_IMPLEMENTATION);
 
         CustomEscrowDst(escrow).setHashlock(secretHashlock);
@@ -102,7 +102,7 @@ contract CustomEscrowFactory is ICustomEscrowFactory {
             IERC20(token).safeTransferFrom(msg.sender, escrow, amount);
         }
 
-        emit DstEscrowCreated(escrow, orderHashlock, msg.sender);
+        emit DstEscrowCreated(escrow, orderHash, msg.sender);
     }
 
     /**

@@ -34,16 +34,22 @@ interface ICustomEscrowFactory {
 
     /**
      * @notice Emitted on EscrowSrc deployment to recreate EscrowSrc and EscrowDst immutables off-chain.
+     * @param escrow The address of the created escrow.
+     * @param orderHash The hash of the order.
+     * @param sender The address of the sender.
      * @param dstImmutablesComplement Additional immutables related to the escrow contract on the destination chain.
      */
-    event SrcEscrowCreated(DstImmutablesComplement dstImmutablesComplement);
+    event SrcEscrowCreated(
+        address escrow, bytes32 orderHash, address sender, DstImmutablesComplement dstImmutablesComplement
+    );
+
     /**
      * @notice Emitted on EscrowDst deployment.
      * @param escrow The address of the created escrow.
-     * @param hashlock The hash of the secret.
-     * @param taker The address of the taker.
+     * @param orderHash The hash of the order.
+     * @param sender The address of the sender.
      */
-    event DstEscrowCreated(address escrow, bytes32 hashlock, address taker);
+    event DstEscrowCreated(address escrow, bytes32 orderHash, address sender);
 
     /**
      * @notice Creates a new source escrow contract.
@@ -72,14 +78,14 @@ interface ICustomEscrowFactory {
      * @param token The token address to be deposited.
      * @param amount The amount of tokens to be deposited.
      * @param safetyDeposit The safety deposit amount in native tokens.
-     * @param orderHashlock The hashlock for the order.
+     * @param orderHash The hashlock for the order.
      * @param secretHashlock The hashlock for the secret.
      */
     function deployDstEscrow(
         address token,
         uint256 amount,
         uint256 safetyDeposit,
-        bytes32 orderHashlock,
+        bytes32 orderHash,
         bytes32 secretHashlock
     ) external payable;
 
@@ -88,6 +94,7 @@ interface ICustomEscrowFactory {
      * @return The address of implementation on the source chain.
      */
     function getEscrowSrcImplementation() external view returns (address);
+
     /**
      * @notice Returns the address of implementation on the destination chain.
      * @return The address of implementation on the destination chain.
