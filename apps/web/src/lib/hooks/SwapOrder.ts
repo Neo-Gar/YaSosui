@@ -162,7 +162,7 @@ export function useSwapOrder() {
                 preOrder.secrets
             )
             // STEP 2: User signs the order
-            const signature = await signOrderSui(order)
+            const signature = await signOrder(chainId as number, order)
 
             const orderHash = order.getOrderHash(chainId as number)
 
@@ -269,8 +269,8 @@ export function useSwapOrder() {
                 preOrder.secrets
             )
             // STEP 2: User signs the order
-            const signature = await signOrder(chainId as number, order)
-            const orderHash = order.getOrderHash(chainId as number)
+            const signature = await signOrderSui(order)
+            const orderHash = order.getOrderHash(10)
 
 
             console.log('[swapOrder] Order', order)
