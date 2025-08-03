@@ -30,7 +30,6 @@ import {
 } from '@/lib/utils/orderSerializer'
 
 // Import Sui user hook
-import useSUIUser from './SUIUser'
 
 // Hook for user's swap Order
 /**
@@ -195,9 +194,9 @@ export function useSwapOrder() {
             return {
                 data: {
                     fromTokenKey: tokenAddress,
-                    fromNetwork: 'sui',
+                    fromNetwork: 'ethereum',
                     toTokenKey: usiTokenAddress || '0x000000000000000000000000000000000000000',
-                    toNetwork: 'ethereum',
+                    toNetwork: 'sui',
                     signature: [signature],
                     orderHash: [orderHash],
                     secrets: secrets,

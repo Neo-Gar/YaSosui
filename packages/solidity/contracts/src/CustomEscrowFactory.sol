@@ -40,7 +40,8 @@ contract CustomEscrowFactory is ICustomEscrowFactory {
         address makerAsset,
         uint256 makingAmount,
         uint256 safetyDeposit,
-        uint256 chainId
+        uint256 chainId,
+        bytes32 secretHashlock
     ) external payable {
         DstImmutablesComplement memory immutablesComplement = DstImmutablesComplement({
             maker: maker,
@@ -55,7 +56,12 @@ contract CustomEscrowFactory is ICustomEscrowFactory {
         bytes32 salt = orderHash;
 
         address escrow = _deployEscrow(salt, msg.value, ESCROW_SRC_IMPLEMENTATION);
-        CustomEscrowSrc(escrow).setHashlock(orderHash);
+
+        CustomEscrowSrc(escrow).setHashlock(secretHashlock);
+
+        if (token != address(0)) {
+            IERC20(token).safeTransferFrom(address(this), escrow, makingAmount);
+        }
 
         if (escrow.balance < safetyDeposit || IERC20(makerAsset).balanceOf(escrow) < makingAmount) {
             revert InsufficientEscrowBalance();
@@ -77,7 +83,7 @@ contract CustomEscrowFactory is ICustomEscrowFactory {
         uint256 amount,
         uint256 safetyDeposit,
         bytes32 orderHashlock,
-        bytes32 hashlock
+        bytes32 secretHashlock
     ) external payable {
         uint256 nativeAmount = safetyDeposit;
         if (token == address(0)) {
@@ -87,10 +93,12 @@ contract CustomEscrowFactory is ICustomEscrowFactory {
 
         bytes32 salt = orderHashlock;
         address escrow = _deployEscrow(salt, msg.value, ESCROW_DST_IMPLEMENTATION);
+
+        CustomEscrowDst(escrow).setHashlock(secretHashlock);
+
         if (token != address(0)) {
             IERC20(token).safeTransferFrom(msg.sender, escrow, amount);
         }
-        CustomEscrowDst(escrow).setHashlock(hashlock);
 
         emit DstEscrowCreated(escrow, orderHashlock, msg.sender);
     }
