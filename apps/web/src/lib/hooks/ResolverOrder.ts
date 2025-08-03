@@ -4,11 +4,6 @@ import { useDeployDistSUIEscrow } from "./ResolveDstSUIOrder";
 import { uint8ArrayToHex } from "@1inch/byte-utils";
 import { randomBytes } from "crypto";
 
-const secrets = Array.from({ length: 11 }).map(() =>
-  uint8ArrayToHex(randomBytes(32)),
-);
-const secret = secrets[secrets.length - 1]!;
-
 export const useExecuteEthToSUI = () => {
   const { deploySrcEscrow, withdrawSrc } = useETHEscrow();
   const { deployDistEscrow, withdrawDst } = useDeployDistSUIEscrow();
@@ -17,9 +12,10 @@ export const useExecuteEthToSUI = () => {
     order: Sdk.CrossChainOrder,
     orderHash: string,
     signature: string,
+    secret: string,
   ) => {
     // await deploySrcEscrow(order, signature, secrets);
-    const escrowId = await deployDistEscrow(order, orderHash);
+    const escrowId = await deployDistEscrow(order, orderHash, secret);
     await withdrawDst(escrowId, secret);
     // await withdrawSrc(secret);
   };

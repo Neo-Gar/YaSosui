@@ -163,7 +163,7 @@ module sui_escrow_factory::escrow_factory {
         
         // Verify secret matches hash lock
         let secret_hash = hash::keccak256(&secret);
-        // assert!(secret_hash == escrow.hash_lock, EInvalidSecret);
+        assert!(secret_hash == escrow.hash_lock, EInvalidSecret);
         
         // Mark as withdrawn
         escrow.is_withdrawn = true;

@@ -3,6 +3,7 @@ import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
 import * as Sdk from "@1inch/cross-chain-sdk";
 import { useWallets } from "./useWallets";
+import { sha256, keccak256 } from "ethers";
 
 const client = new SuiClient({
   url: "https://fullnode.testnet.sui.io:443",
@@ -10,12 +11,12 @@ const client = new SuiClient({
 
 const suiFactoryTarget: string =
   // "0xbe9ff52b3a26bf82b0e03334341cda0e47c402d59ae37dd3f20a1476c9afeea8"; // Hardcoded!
-  "0x972d134b8fd02679e3e9b9f1ddba7c3f39d1dcb23a61e324b6b254107139f1cd";
+  "0x7c1b15f36d1b432f60dd2e2fde1c0b57e1c68cc83163e7460bc6ad29e4effda6";
 const suiFactoryObject: string =
   // "0x0119f4ba6ddc450bb1bec3a0a209763e7f449b0b337ad3d52b8e431fe146d6b1"; // Hardcoded!
-  "0xab453ab81b4015357a36ff57241d36c87a776960bc7fa745a2b7fff6fa4ac467";
+  "0xaba2b04380d60fd7b6a53497de56cdc484cbaefdeca16a2c0eea4a92e5fc617a";
 const suiCoinType =
-  "0x972d134b8fd02679e3e9b9f1ddba7c3f39d1dcb23a61e324b6b254107139f1cd::my_coin::MY_COIN";
+  "0x7c1b15f36d1b432f60dd2e2fde1c0b57e1c68cc83163e7460bc6ad29e4effda6::my_coin::MY_COIN";
 
 const hexToBytes = (hex: string): number[] => {
   const cleanHex = hex.startsWith("0x") ? hex.slice(2) : hex;
@@ -44,8 +45,9 @@ export const useDeployDistSUIEscrow = () => {
   const deployDistEscrow = async (
     order: Sdk.CrossChainOrder,
     orderHash: string,
+    secret: string,
   ): Promise<string> => {
-    const hashLock = order.escrowExtension.hashLockInfo;
+    const hashLock = keccak256(secret);
     const maker = order.maker;
     const taker = order.maker; // ?
     const token = order.takerAsset;

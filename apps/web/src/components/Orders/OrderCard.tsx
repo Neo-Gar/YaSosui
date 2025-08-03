@@ -115,11 +115,14 @@ export default function OrderCard({ order }: OrderCardProps) {
     //Or from local order
     const orderRecovered = orderFromJson(localOrder.jsonOrder ?? "");
     console.log(">>> orderRecovered: ", orderRecovered);
+    const secrets = JSON.parse(localOrder.secrets!);
+    const secret = secrets[secrets.length - 1]!;
 
     await executeOrder(
       orderRecovered,
       localOrder.orderHash!,
       localOrder.signature!,
+      secret,
     );
 
     // // Check if selected percentage is available
