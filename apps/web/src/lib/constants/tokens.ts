@@ -17,28 +17,35 @@ export const UNKNOWN_TOKEN: IToken = {
 
 export const TOKENS: IToken[] = [
   {
-    symbol: "wETH",
-    name: "Wrapped Ethereum",
+    symbol: "DAI",
+    name: "DAI",
     logo: "/eth-logo.svg",
-    address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
-    // address: "0x6162C34111986F36E18DBD381CB35bd1e2169B46",
+    address: "0x6162C34111986F36E18DBD381CB35bd1e2169B46",
     network: "ethereum",
   },
-  {
-    symbol: "USDC",
-    name: "USD Coin",
-    logo: "/usdc-logo.svg",
-    address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", // Sepolia USDC
-    // address: "0x6162C34111986F36E18DBD381CB35bd1e2169B46",
-    network: "ethereum",
-  },
-  {
-    symbol: "USDT",
-    name: "ERC-20 USDT",
-    logo: "/usdt-logo.svg",
-    address: "0xdac17f958d2ee523a2206206994597c13d831ec7",
-    network: "ethereum",
-  },
+  // {
+  //   symbol: "wETH",
+  //   name: "Wrapped Ethereum",
+  //   logo: "/eth-logo.svg",
+  //   address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+  //   // address: "0x6162C34111986F36E18DBD381CB35bd1e2169B46",
+  //   network: "ethereum",
+  // },
+  // {
+  //   symbol: "USDC",
+  //   name: "USD Coin",
+  //   logo: "/usdc-logo.svg",
+  //   address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", // Sepolia USDC
+  //   // address: "0x6162C34111986F36E18DBD381CB35bd1e2169B46",
+  //   network: "ethereum",
+  // },
+  // {
+  //   symbol: "USDT",
+  //   name: "ERC-20 USDT",
+  //   logo: "/usdt-logo.svg",
+  //   address: "0xdac17f958d2ee523a2206206994597c13d831ec7",
+  //   network: "ethereum",
+  // },
   {
     symbol: "SUI",
     name: "Sui",

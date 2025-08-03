@@ -14,6 +14,7 @@ export const TokenLogo = memo(
       SUI: SuiLogo,
       USDT: UsdtLogo,
       USDC: UsdcLogo,
+      DAI: EthLogo,
     };
 
     const LogoComponent = logoMap[symbol.toUpperCase()];

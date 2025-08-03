@@ -611,31 +611,21 @@ export default function Swap() {
                 {/* Swap button */}
                 <motion.button
                   type="submit"
-                  disabled={
-                    !values.fromAmount ||
-                    !values.toNetworkAddress ||
-                    createOrderMutation.isPending
-                  }
+                  disabled={!values.fromAmount || createOrderMutation.isPending}
                   whileHover={{
                     scale:
-                      values.fromAmount &&
-                      values.toNetworkAddress &&
-                      !createOrderMutation.isPending
+                      values.fromAmount && !createOrderMutation.isPending
                         ? 1.02
                         : 1,
                   }}
                   whileTap={{
                     scale:
-                      values.fromAmount &&
-                      values.toNetworkAddress &&
-                      !createOrderMutation.isPending
+                      values.fromAmount && !createOrderMutation.isPending
                         ? 0.98
                         : 1,
                   }}
                   className={`w-full rounded-lg py-3 font-medium text-white shadow-lg transition-all ${
-                    values.fromAmount &&
-                    values.toNetworkAddress &&
-                    !createOrderMutation.isPending
+                    values.fromAmount && !createOrderMutation.isPending
                       ? "bg-gradient-to-r from-[#8F81F8] to-[#7C6EF8] hover:from-[#7C6EF8] hover:to-[#6B5EF7]"
                       : "cursor-not-allowed bg-gray-300"
                   }`}
