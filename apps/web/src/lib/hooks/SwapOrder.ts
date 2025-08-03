@@ -217,6 +217,7 @@ export function useSwapOrder() {
       console.log(`[swapOrder]`, `${chainId} Order signed by user`, orderHash);
 
       // Approve tokens to the escrow factory
+      console.log(`[swapOrder] Approving tokens ${tokenAddress} to ${escrowFactory} for amount ${fromAmount}`);
       await approveTokens(tokenAddress, escrowFactory as `0x${string}`, fromAmount);
       console.log("[swapOrder] Tokens approved");
 
