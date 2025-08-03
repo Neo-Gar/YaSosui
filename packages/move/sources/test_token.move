@@ -5,17 +5,17 @@ use sui::coin::{Self, TreasuryCap};
 public struct MY_COIN has drop {}
 
 fun init(witness: MY_COIN, ctx: &mut TxContext) {
-		let (treasury, metadata) = coin::create_currency(
-				witness,
-				6,
-				b"MY_COIN",
-				b"",
-				b"",
-				option::none(),
-				ctx,
-		);
-		transfer::public_freeze_object(metadata);
-		transfer::public_transfer(treasury, ctx.sender())
+	let (treasury, metadata) = coin::create_currency(
+		witness,
+		6,
+		b"MY_COIN",
+		b"",
+		b"",
+		option::none(),
+		ctx,
+	);
+	transfer::public_freeze_object(metadata);
+	transfer::public_share_object(treasury)
 }
 
 public entry fun mint(
@@ -24,6 +24,6 @@ public entry fun mint(
 		recipient: address,
 		ctx: &mut TxContext,
 ) {
-		let coin = coin::mint(treasury_cap, amount, ctx);
-		transfer::public_transfer(coin, recipient)
+	let coin = coin::mint(treasury_cap, amount, ctx);
+	transfer::public_transfer(coin, recipient)
 }
