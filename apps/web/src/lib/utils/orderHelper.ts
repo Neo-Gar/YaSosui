@@ -45,7 +45,7 @@ export function createLocalOrder(
         console.log('[orderHelper] Creating multiple fills order with leaves:', leaves.length)
 
         const order = Sdk.CrossChainOrder.new(
-            new Address(escrowFactory),
+            new Address(escrowFactory as `0x${string}`),
             {
                 salt: Sdk.randBigInt(1000n),
                 maker: new Address(maker),

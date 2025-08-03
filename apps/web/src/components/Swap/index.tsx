@@ -178,7 +178,12 @@ export default function Swap() {
         "/////////////////////// Starting swap order... ///////////////////////",
       );
 
+      ///  setSwapSuiToEth(activeWallet.type === "sui" ? true : false);
+      console.log("/////////////////////// Active wallet: ", activeWallet, " ///////////////////////");
+      console.log("/////////////////////// Swap eth to sui: ", activeWallet.type === "sui" ? true : false, " ///////////////////////");
+
       const result = await startSwapOrder(
+        activeWallet.type === "sui" ? true : false,
         fromTokenKey,
         toTokenKey,
         parseEther(values.fromAmount),

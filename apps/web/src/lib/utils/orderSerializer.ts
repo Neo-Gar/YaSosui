@@ -323,7 +323,7 @@ export function deserializeCrossChainOrder(serialized: SerializedCrossChainOrder
 
     // Create the order using the static new method
     const validateAddress = (address: string, name: string) => {
-        if (!address || address === "" || address === "0x0000000000000000000000000000000000000000") {
+        if (!address || address === "") {
             if (name === "escrowFactory") {
                 // Use default escrow factory address for backward compatibility
                 return new Address('0x7cA1DaC2BBc62896A70658019435Cd178c9651B2')

@@ -11,7 +11,7 @@ import {
 import { uint8ArrayToHex, UINT_40_MAX } from '@1inch/byte-utils'
 import { useAccount, useWalletClient, usePublicClient, useReadContract, useWriteContract } from 'wagmi'
 import { createLocalOrder } from '@/lib/utils/orderHelper'
-import { useSignPersonalMessage } from '@mysten/dapp-kit'
+import { useSignPersonalMessage, useSuiClient, useCurrentAccount } from '@mysten/dapp-kit'
 
 // Configs
 import { config } from '@/lib/config/chainConfig'
@@ -39,7 +39,7 @@ import useSUIUser from './SUIUser'
  * @dev If order is activr pendingSwap == true, user can't create new order
  */
 export function useSwapOrder() {
-    const [swapSuiToEth, setSwapEthToSui] = useState(false);
+    //const [swapSuiToEth, setSwapSuiToEth] = useState(false);
     const [pendingSwap, setPendingSwap] = useState(false);
     const { mutateAsync: signSuiMessage } = useSignPersonalMessage()
 
@@ -88,23 +88,28 @@ export function useSwapOrder() {
     const { address: userAddress, chainId, chain } = useAccount()
     const { data: walletClient } = useWalletClient()
     const publicClient = usePublicClient()
+    const suiAccount = useCurrentAccount()
 
 
     /*//////////////////////////////////////////////////////////////
                            MAIN STEPS
     //////////////////////////////////////////////////////////////*/
 
-    const startSwapOrder = async (tokenAddress: string, usiTokenAddress: string, fromAmount: bigint, toAmount: bigint) => {
+    const startSwapOrder = async (swapSuiToEth: boolean, tokenAddress: string, usiTokenAddress: string, fromAmount: bigint, toAmount: bigint) => {
+
+        console.log('[swapOrder] // swapSuiToEth', swapSuiToEth)
         setPendingSwap(true)
         if (!swapSuiToEth) {
 
             console.log('[swapOrder] // STEP 0: Initializing swapOrder by user on Ethereum')
 
             // Create an ethers BrowserProvider from the wallet client
+            if (!walletClient) throw new Error('Wallet client not available')
+            const jsonRpcProvider = new JsonRpcProvider(config.chain.evm.rpcUrl);
 
             //const src: EvmChain = await initChain(config.chain.evm, jsonRpcProvider)
-            const escrowFactory = process.env.NEXT_PUBLIC_SUI_ESCROW_FACTORY_ADDRESS
-            const resolver = process.env.NEXT_PUBLIC_SUI_RESOLVER_ADDRESS
+            const escrowFactory = process.env.NEXT_PUBLIC_EVM_ESCROW_FACTORY_ADDRESS
+            const resolver = process.env.NEXT_PUBLIC_EVM_RESOLVER_ADDRESS
 
             console.log('[swapOrder] Escrow factory address (Factory Object Id)', escrowFactory)
             console.log('[swapOrder] Resolver address(Factory Package Id)', resolver)
@@ -115,7 +120,7 @@ export function useSwapOrder() {
             // const initialBalance = await getBalanceEVMForToken(tokenAddress as `0x${string}`)//await chainUser.tokenBalance(tokenAddress as `0x${string}`)
 
             //console.log('[swapOrder] User initialBalance for EVM token ', tokenAddress, initialBalance)
-            console.log('[swapOrder] // STEP 1: User creates cross-chain order with multiple fill capability')
+            console.log('[swapOrder] // STEP 1: User creates cross-chain order with multiple fill capability ON EVM')
 
             // STEP 1: User creates cross-chain order with multiple fill capability
 
@@ -135,7 +140,7 @@ export function useSwapOrder() {
                 secret: secrets[0]!, // Use the first secret for multiple fills
                 srcChainId: 1,
                 dstChainId: 10,
-                srcTimestamp: BigInt(Date.now()), //BigInt((await jsonRpcProvider.getBlock('latest'))!.timestamp),
+                srcTimestamp: BigInt(Math.floor(Date.now() / 1000)), //BigInt((await jsonRpcProvider.getBlock('latest'))!.timestamp),
                 resolver: resolver as `0x${string}`,
                 allowMultipleFills: true,
                 secrets: secrets
@@ -191,7 +196,7 @@ export function useSwapOrder() {
                 data: {
                     fromTokenKey: tokenAddress,
                     fromNetwork: 'sui',
-                    toTokenKey: usiTokenAddress || '0x0000000000000000000000000000000000000001',
+                    toTokenKey: usiTokenAddress || '0x000000000000000000000000000000000000000',
                     toNetwork: 'ethereum',
                     signature: [signature],
                     orderHash: [orderHash],
@@ -201,15 +206,14 @@ export function useSwapOrder() {
             }
         } else {
             // Initializing swapOrder by user on SUI
-            console.log('[swapOrder] // STEP 0: Initializing swapOrder by user on Ethereum')
+            console.log('[swapOrder] // STEP 0: Initializing swapOrder by user on SUI')
 
             // Create an ethers BrowserProvider from the wallet client
-            if (!walletClient) throw new Error('Wallet client not available')
-            const jsonRpcProvider = new JsonRpcProvider(config.chain.evm.rpcUrl);
 
             //const src: EvmChain = await initChain(config.chain.evm, jsonRpcProvider)
-            const escrowFactory = process.env.NEXT_PUBLIC_EVM_ESCROW_FACTORY_ADDRESS
-            const resolver = process.env.NEXT_PUBLIC_EVM_RESOLVER_ADDRESS
+
+            const escrowFactory = process.env.NEXT_PUBLIC_SUI_ESCROW_FACTORY_ADDRESS
+            const resolver = process.env.NEXT_PUBLIC_SUI_RESOLVER_ADDRESS
 
             console.log('[swapOrder] Escrow factory address', escrowFactory)
             console.log('[swapOrder] Resolver address', resolver)
@@ -230,21 +234,24 @@ export function useSwapOrder() {
             const leaves = Sdk.HashLock.getMerkleLeaves(secrets)
 
 
+
             const preOrder: PreOrder = {
-                escrowFactory: escrowFactory as `0x${string}`,
-                maker: userAddress as `0x${string}`,
+                escrowFactory: escrowFactory?.slice(0, 42) as `0x${string}`, //"0x0000000000000000000000000000000000000000", //escrowFactory as `0x${string}`,
+                maker: suiAccount?.address?.slice(0, 42) as `0x${string}`, //"0x0000000000000000000000000000000000000000", //suiAccount?.address as `0x${ string }`,
                 makingAmount: fromAmount,
                 takingAmount: toAmount,
-                makerAsset: tokenAddress,
-                takerAsset: usiTokenAddress || '0x0000000000000000000000000000000000000001', // Placeholder for Sui USDC
+                makerAsset: tokenAddress.slice(0, 42) as `0x${string}`, //'0x0000000000000000000000000000000000000000',/// tokenAddress,
+                takerAsset: usiTokenAddress.slice(0, 42) as `0x${string}`, //'0x0000000000000000000000000000000000000000', // Placeholder for Sui USDC
                 secret: secrets[0]!, // Use the first secret for multiple fills
                 srcChainId: 1,
                 dstChainId: 10,
-                srcTimestamp: BigInt(Date.now()),
-                resolver: resolver as `0x${string}`,
+                srcTimestamp: BigInt(Math.floor(Date.now() / 1000)),
+                resolver: resolver?.slice(0, 42) as `0x${string}`, //"0x0000000000000000000000000000000000000000", //resolver as `0x${ string } `,
                 allowMultipleFills: true,
                 secrets: secrets
             }
+
+            console.log('[swapOrder] PreOrder', preOrder)
             // Create order with multiple fills enabled
             const order = createLocalOrder(
                 preOrder.escrowFactory,
@@ -296,7 +303,7 @@ export function useSwapOrder() {
                     fromTokenKey: tokenAddress,
                     fromNetwork: 'sui',
                     toTokenKey: usiTokenAddress || '0x0000000000000000000000000000000000000001',
-                    toNetwork: 'sui',
+                    toNetwork: 'ethereum',
                     signature: [signature],
                     orderHash: [orderHash],
                     secrets: secrets,
@@ -317,12 +324,12 @@ export function useSwapOrder() {
 
         // Handle ETH (native token) - use getBalance instead of contract call
         if (tokenAddress === 'ETH' || tokenAddress === '0x0000000000000000000000000000000000000000') {
-            return await publicClient.getBalance({ address: userAddress as `0x${string}` })
+            return await publicClient.getBalance({ address: userAddress as `0x${string} ` })
         }
 
         // For ERC20 tokens, use balanceOf contract call
         const balance = await publicClient.readContract({
-            address: tokenAddress as `0x${string}`,
+            address: tokenAddress as `0x${string} `,
             abi: [{
                 name: 'balanceOf',
                 type: 'function',
@@ -331,7 +338,7 @@ export function useSwapOrder() {
                 outputs: [{ name: 'balance', type: 'uint256' }]
             }],
             functionName: 'balanceOf',
-            args: [userAddress as `0x${string}`]
+            args: [userAddress as `0x${string} `]
         })
         return balance ?? 0n
     }
