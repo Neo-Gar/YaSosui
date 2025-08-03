@@ -5,7 +5,7 @@ import {TestEscrowFactory, IERC20} from "../contracts/src/TestEscrowFactory.sol"
 import {Resolver, IOrderMixin} from "../contracts/src/Resolver.sol";
 import {Script} from "forge-std/Script.sol";
 
-contract Deploy is Script {
+contract DeployTestEscrowFactory is Script {
     TestEscrowFactory testEscrowFactory;
 
     function run() public {
