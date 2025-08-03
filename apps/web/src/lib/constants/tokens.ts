@@ -28,7 +28,7 @@ export const TOKENS: IToken[] = [
     symbol: "USDC",
     name: "USD Coin",
     logo: "/usdc-logo.svg",
-    address: "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48",
+    address: "0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238", // Sepolia USDC
     // address: "0x6162C34111986F36E18DBD381CB35bd1e2169B46",
     network: "ethereum",
   },
