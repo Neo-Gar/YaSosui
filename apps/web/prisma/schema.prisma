@@ -13,6 +13,7 @@ model Order {
   fromNetwork    String
   toTokenKey     String
   toNetwork      String
+  toNetworkAddress String
   totalAmount    Float
   collectedAmount Float   @default(0)
   status         String   @default("active") // "active" | "completed" | "cancelled" | "expired"

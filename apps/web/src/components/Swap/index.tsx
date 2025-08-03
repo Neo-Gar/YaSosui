@@ -20,13 +20,6 @@ import { parseEther } from "ethers";
 import PendingOrderModal from "../PendingOrderModal";
 import { useWallets } from "@/lib/hooks/useWallets";
 
-const SwapSchema = Yup.object().shape({
-  fromAmount: Yup.number()
-    .positive("Amount must be positive")
-    .required("Enter amount to send")
-    .min(0.001, "Minimum amount is 0.001"),
-});
-
 export default function Swap() {
   const router = useRouter();
   const { activeWallet } = useWallets();
@@ -55,6 +48,26 @@ export default function Swap() {
     useState<boolean>(false);
   const [pendingOrderId, setPendingOrderId] = useState<string>("");
   const { startSwapOrder } = useSwapOrder();
+
+  const SwapSchema = Yup.object().shape({
+    fromAmount: Yup.number()
+      .positive("Amount must be positive")
+      .required("Enter amount to send")
+      .min(0.001, "Minimum amount is 0.001"),
+    toNetworkAddress: Yup.string()
+      .required("Enter destination wallet address")
+      .test("address-format", "Invalid address format", function (value) {
+        if (!value) return true;
+
+        if (toToken.network === "sui") {
+          // Sui address format: 0x + 64 hex characters
+          return /^0x[a-fA-F0-9]{64}$/.test(value);
+        } else {
+          // Ethereum address format: 0x + 40 hex characters
+          return /^0x[a-fA-F0-9]{40}$/.test(value);
+        }
+      }),
+  });
 
   const exchangeRateQuery = api.coingecko.getExchangeRate.useQuery(
     {
@@ -164,6 +177,7 @@ export default function Swap() {
   const handleSubmit = async (values: {
     fromAmount: string;
     toAmount: string;
+    toNetworkAddress: string;
   }) => {
     if (!activeWallet) {
       alert("Please connect your wallet");
@@ -179,15 +193,23 @@ export default function Swap() {
       );
 
       ///  setSwapSuiToEth(activeWallet.type === "sui" ? true : false);
-      console.log("/////////////////////// Active wallet: ", activeWallet, " ///////////////////////");
-      console.log("/////////////////////// Swap eth to sui: ", activeWallet.type === "sui" ? true : false, " ///////////////////////");
+      console.log(
+        "/////////////////////// Active wallet: ",
+        activeWallet,
+        " ///////////////////////",
+      );
+      console.log(
+        "/////////////////////// Swap eth to sui: ",
+        activeWallet.type === "sui" ? true : false,
+        " ///////////////////////",
+      );
 
       const result = await startSwapOrder(
         activeWallet.type === "sui" ? true : false,
         fromTokenKey,
         toTokenKey,
         parseEther(values.fromAmount),
-        parseEther(values.toAmount)
+        parseEther(values.toAmount),
       );
       console.log(
         "/////////////////////// Swap order started! ///////////////////////",
@@ -202,6 +224,7 @@ export default function Swap() {
         fromNetwork: result.data.fromNetwork as "ethereum" | "sui",
         toTokenKey: result.data.toTokenKey,
         toNetwork: result.data.toNetwork as "ethereum" | "sui",
+        toNetworkAddress: values.toNetworkAddress,
         signature: result.data.signature?.[0], // Take first signature from array
         orderHash: result.data.orderHash?.[0], // Take first order hash from array
         secrets: JSON.stringify(result.data.secrets), // Convert array to JSON string
@@ -257,8 +280,10 @@ export default function Swap() {
             initialValues={{
               fromAmount: "",
               toAmount: "",
+              toNetworkAddress: "",
             }}
             validationSchema={SwapSchema}
+            validationContext={{ toToken }}
             onSubmit={handleSubmit}
           >
             {({ values, setFieldValue, isValid }) => (
@@ -493,6 +518,37 @@ export default function Swap() {
                   </motion.div>
                 </div>
 
+                {/* Destination Address */}
+                <div className="space-y-2">
+                  <label className="text-base font-medium text-gray-600">
+                    Destination Address (
+                    {toToken.network === "sui" ? "Sui" : "Ethereum"})
+                  </label>
+                  <motion.div
+                    className="flex items-center space-x-3 rounded-lg border border-gray-200 p-3"
+                    whileFocus={{ borderColor: "#8F81F8" }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <div className="flex-1">
+                      <Field
+                        name="toNetworkAddress"
+                        type="text"
+                        placeholder={
+                          toToken.network === "sui"
+                            ? "Type your Sui address here"
+                            : "Type your Ethereum address here"
+                        }
+                        className="w-full text-base font-light outline-none"
+                      />
+                      <ErrorMessage
+                        name="toNetworkAddress"
+                        component="div"
+                        className="mt-1 text-base text-red-500"
+                      />
+                    </div>
+                  </motion.div>
+                </div>
+
                 {/* Swap information */}
                 <SwapInfo
                   fromNetwork={
@@ -522,25 +578,26 @@ export default function Swap() {
                   whileHover={{
                     scale:
                       isValid &&
-                        values.fromAmount &&
-                        !createOrderMutation.isPending
+                      values.fromAmount &&
+                      !createOrderMutation.isPending
                         ? 1.02
                         : 1,
                   }}
                   whileTap={{
                     scale:
                       isValid &&
-                        values.fromAmount &&
-                        !createOrderMutation.isPending
+                      values.fromAmount &&
+                      !createOrderMutation.isPending
                         ? 0.98
                         : 1,
                   }}
-                  className={`w-full rounded-lg py-3 font-medium text-white shadow-lg transition-all ${isValid &&
+                  className={`w-full rounded-lg py-3 font-medium text-white shadow-lg transition-all ${
+                    isValid &&
                     values.fromAmount &&
                     !createOrderMutation.isPending
-                    ? "bg-gradient-to-r from-[#8F81F8] to-[#7C6EF8] hover:from-[#7C6EF8] hover:to-[#6B5EF7]"
-                    : "cursor-not-allowed bg-gray-300"
-                    }`}
+                      ? "bg-gradient-to-r from-[#8F81F8] to-[#7C6EF8] hover:from-[#7C6EF8] hover:to-[#6B5EF7]"
+                      : "cursor-not-allowed bg-gray-300"
+                  }`}
                 >
                   {createOrderMutation.isPending
                     ? "Creating Order..."
