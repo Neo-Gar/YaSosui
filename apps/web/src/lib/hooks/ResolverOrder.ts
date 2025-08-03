@@ -1,6 +1,6 @@
 import * as Sdk from "@1inch/cross-chain-sdk";
 import { useETHEscrow } from "./ResolveSrcETHOrder";
-import { deployDistEscrow, withdrawDst } from "./ResolveDstSUIOrder";
+import { useDeployDistSUIEscrow } from "./ResolveDstSUIOrder";
 import { uint8ArrayToHex } from "@1inch/byte-utils";
 import { randomBytes } from "crypto";
 
@@ -11,6 +11,7 @@ const secret = secrets[secrets.length - 1]!;
 
 export const useExecuteEthToSUI = () => {
   const { deploySrcEscrow, withdrawSrc } = useETHEscrow();
+  const { deployDistEscrow, withdrawDst } = useDeployDistSUIEscrow();
 
   const executeOrder = async (
     order: Sdk.CrossChainOrder,

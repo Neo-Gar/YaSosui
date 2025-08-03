@@ -33,72 +33,76 @@ async function pickCoin(owner: string, coinType: string, min: bigint) {
   throw new Error("Not enough balance");
 }
 
-export const deployDistEscrow = async (
-  order: Sdk.CrossChainOrder,
-  orderHash: string,
-): Promise<string> => {
-  const { user, signAndExecuteTransaction } = useSUIUser();
-  const hashLock = order.escrowExtension.hashLockInfo;
-  const maker = order.maker;
-  const taker = order.maker; // ?
-  const token = order.takerAsset;
-  const amount = order.takingAmount;
-  const safetyDeposit = order.escrowExtension.srcSafetyDeposit;
-  const timeLocks = order.escrowExtension.timeLocks;
-  // Deploy escrow
-  const txbEscrow = new Transaction();
+export const useDeployDistSUIEscrow = () => {
+  const deployDistEscrow = async (
+    order: Sdk.CrossChainOrder,
+    orderHash: string,
+  ): Promise<string> => {
+    const { user, signAndExecuteTransaction } = useSUIUser();
+    const hashLock = order.escrowExtension.hashLockInfo;
+    const maker = order.maker;
+    const taker = order.maker; // ?
+    const token = order.takerAsset;
+    const amount = order.takingAmount;
+    const safetyDeposit = order.escrowExtension.srcSafetyDeposit;
+    const timeLocks = order.escrowExtension.timeLocks;
+    // Deploy escrow
+    const txbEscrow = new Transaction();
 
-  const [safetyDepositCoin] = txbEscrow.splitCoins(txbEscrow.gas, [
-    txbEscrow.pure.u64(safetyDeposit),
-  ]);
+    const [safetyDepositCoin] = txbEscrow.splitCoins(txbEscrow.gas, [
+      txbEscrow.pure.u64(safetyDeposit),
+    ]);
 
-  const depositTokenCoin = await pickCoin(
-    user!.address,
-    suiCoinType,
-    safetyDeposit,
-  );
+    const depositTokenCoin = await pickCoin(
+      user!.address,
+      suiCoinType,
+      safetyDeposit,
+    );
 
-  txbEscrow.moveCall({
-    target: `${suiFactoryTarget}::escrow_factory::deploy_escrow`,
-    arguments: [
-      txbEscrow.object(suiFactoryObject), // factory object
-      txbEscrow.pure("vector<u8>", hexToBytes(orderHash)), // order_hash
-      txbEscrow.pure("vector<u8>", hexToBytes(hashLock.toString())), // hash_lock
-      txbEscrow.pure("address", maker.toString()), // maker
-      txbEscrow.pure("address", taker.toString()), // taker
-      txbEscrow.pure("address", token.toString()), // token
-      txbEscrow.pure("u64", amount), // amount
-      txbEscrow.pure("u64", safetyDeposit), // safety_deposit
-      txbEscrow.pure("vector<u8>", hexToBytes(timeLocks.toString())), // time_locks
-      safetyDepositCoin, // payment coin
-      txbEscrow.object(depositTokenCoin), // deposit token
-    ],
-  });
+    txbEscrow.moveCall({
+      target: `${suiFactoryTarget}::escrow_factory::deploy_escrow`,
+      arguments: [
+        txbEscrow.object(suiFactoryObject), // factory object
+        txbEscrow.pure("vector<u8>", hexToBytes(orderHash)), // order_hash
+        txbEscrow.pure("vector<u8>", hexToBytes(hashLock.toString())), // hash_lock
+        txbEscrow.pure("address", maker.toString()), // maker
+        txbEscrow.pure("address", taker.toString()), // taker
+        txbEscrow.pure("address", token.toString()), // token
+        txbEscrow.pure("u64", amount), // amount
+        txbEscrow.pure("u64", safetyDeposit), // safety_deposit
+        txbEscrow.pure("vector<u8>", hexToBytes(timeLocks.toString())), // time_locks
+        safetyDepositCoin, // payment coin
+        txbEscrow.object(depositTokenCoin), // deposit token
+      ],
+    });
 
-  const dstDeployedAt = await signAndExecuteTransaction(txbEscrow);
+    const dstDeployedAt = await signAndExecuteTransaction(txbEscrow);
 
-  // Get escrow id
-  const transaction = await client.getTransactionBlock({
-    digest: dstDeployedAt.digest,
-    options: { showEvents: true },
-  });
+    // Get escrow id
+    const transaction = await client.getTransactionBlock({
+      digest: dstDeployedAt.digest,
+      options: { showEvents: true },
+    });
 
-  const parsed = transaction.events?.[0]!.parsedJson as any;
-  const escrow_id = parsed.escrow_id;
+    const parsed = transaction.events?.[0]!.parsedJson as any;
+    const escrow_id = parsed.escrow_id;
 
-  return escrow_id;
-};
+    return escrow_id;
+  };
 
-export const withdrawDst = async (escrowId: string, secret: string) => {
-  const { signAndExecuteTransaction } = useSUIUser();
-  const txbWithdraw = new Transaction();
-  txbWithdraw.moveCall({
-    target: `${suiFactoryTarget}::escrow_factory::withdraw_escrow`,
-    arguments: [
-      txbWithdraw.object(escrowId),
-      txbWithdraw.pure("vector<u8>", hexToBytes(secret)),
-    ],
-  });
+  const withdrawDst = async (escrowId: string, secret: string) => {
+    const { signAndExecuteTransaction } = useSUIUser();
+    const txbWithdraw = new Transaction();
+    txbWithdraw.moveCall({
+      target: `${suiFactoryTarget}::escrow_factory::withdraw_escrow`,
+      arguments: [
+        txbWithdraw.object(escrowId),
+        txbWithdraw.pure("vector<u8>", hexToBytes(secret)),
+      ],
+    });
 
-  await signAndExecuteTransaction(txbWithdraw);
+    await signAndExecuteTransaction(txbWithdraw);
+  };
+
+  return { deployDistEscrow, withdrawDst };
 };
