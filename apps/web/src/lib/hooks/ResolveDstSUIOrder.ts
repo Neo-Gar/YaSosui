@@ -2,7 +2,7 @@ import { SuiClient } from "@mysten/sui/client";
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519";
 import { Transaction } from "@mysten/sui/transactions";
 import * as Sdk from "@1inch/cross-chain-sdk";
-import useSUIUser from "./SUIUser";
+import { useWallets } from "./useWallets";
 
 const client = new SuiClient({
   url: "https://fullnode.testnet.sui.io:443",
@@ -34,11 +34,12 @@ async function pickCoin(owner: string, coinType: string, min: bigint) {
 }
 
 export const useDeployDistSUIEscrow = () => {
+  const { suiAccount, signAndExecuteTransaction } = useWallets();
+
   const deployDistEscrow = async (
     order: Sdk.CrossChainOrder,
     orderHash: string,
   ): Promise<string> => {
-    const { user, signAndExecuteTransaction } = useSUIUser();
     const hashLock = order.escrowExtension.hashLockInfo;
     const maker = order.maker;
     const taker = order.maker; // ?
@@ -54,7 +55,7 @@ export const useDeployDistSUIEscrow = () => {
     ]);
 
     const depositTokenCoin = await pickCoin(
-      user!.address,
+      suiAccount!.address,
       suiCoinType,
       safetyDeposit,
     );
@@ -76,7 +77,9 @@ export const useDeployDistSUIEscrow = () => {
       ],
     });
 
-    const dstDeployedAt = await signAndExecuteTransaction(txbEscrow);
+    const dstDeployedAt = await signAndExecuteTransaction({
+      transaction: txbEscrow,
+    });
 
     // Get escrow id
     const transaction = await client.getTransactionBlock({
@@ -91,7 +94,6 @@ export const useDeployDistSUIEscrow = () => {
   };
 
   const withdrawDst = async (escrowId: string, secret: string) => {
-    const { signAndExecuteTransaction } = useSUIUser();
     const txbWithdraw = new Transaction();
     txbWithdraw.moveCall({
       target: `${suiFactoryTarget}::escrow_factory::withdraw_escrow`,
@@ -101,7 +103,7 @@ export const useDeployDistSUIEscrow = () => {
       ],
     });
 
-    await signAndExecuteTransaction(txbWithdraw);
+    await signAndExecuteTransaction({ transaction: txbWithdraw });
   };
 
   return { deployDistEscrow, withdrawDst };

@@ -1,4 +1,8 @@
-import { useCurrentAccount, useDisconnectWallet } from "@mysten/dapp-kit";
+import {
+  useCurrentAccount,
+  useDisconnectWallet,
+  useSignAndExecuteTransaction,
+} from "@mysten/dapp-kit";
 import { useAppKitAccount, useDisconnect } from "@reown/appkit/react";
 import { useCallback } from "react";
 
@@ -7,6 +11,8 @@ export const useWallets = () => {
   const reownAccount = useAppKitAccount();
   const { mutate: disconnectSui } = useDisconnectWallet();
   const { disconnect: disconnectReown } = useDisconnect();
+  const { mutateAsync: signAndExecuteTransaction } =
+    useSignAndExecuteTransaction();
 
   const disconnectAll = useCallback(async () => {
     try {
@@ -48,6 +54,7 @@ export const useWallets = () => {
     reownAccount,
     disconnectAll,
     disconnectOtherWallet,
+    signAndExecuteTransaction,
     activeWallet,
     isConnected: Boolean(suiAccount || reownAccount),
   };

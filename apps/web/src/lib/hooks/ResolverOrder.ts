@@ -18,8 +18,8 @@ export const useExecuteEthToSUI = () => {
     orderHash: string,
     signature: string,
   ) => {
-    await deploySrcEscrow(order, signature, secrets);
-    // const escrowId = await deployDistEscrow(order, orderHash);
+    // await deploySrcEscrow(order, signature, secrets);
+    const escrowId = await deployDistEscrow(order, orderHash);
     // await withdrawDst(escrowId, secret);
     // await withdrawSrc(secret);
   };
