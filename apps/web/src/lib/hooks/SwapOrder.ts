@@ -11,6 +11,7 @@ import {
 import { uint8ArrayToHex, UINT_40_MAX } from '@1inch/byte-utils'
 import { useAccount, useWalletClient, usePublicClient, useReadContract, useWriteContract } from 'wagmi'
 import { createLocalOrder } from '@/lib/utils/orderHelper'
+import { useSignPersonalMessage } from '@mysten/dapp-kit'
 
 // Configs
 import { config } from '@/lib/config/chainConfig'
@@ -28,6 +29,9 @@ import {
     createOrderWithSerialization
 } from '@/lib/utils/orderSerializer'
 
+// Import Sui user hook
+import useSUIUser from './SUIUser'
+
 // Hook for user's swap Order
 /**
  * @notice Hook to manage active swap order
@@ -37,6 +41,10 @@ import {
 export function useSwapOrder() {
     const [swapSuiToEth, setSwapEthToSui] = useState(false);
     const [pendingSwap, setPendingSwap] = useState(false);
+    const { mutateAsync: signSuiMessage } = useSignPersonalMessage()
+
+    // Get Sui user context
+    // const { signMessage: signSuiMessage, user: suiUser } = useSUIUser()
 
     // Configuration
     interface EvmChain {
@@ -86,10 +94,113 @@ export function useSwapOrder() {
                            MAIN STEPS
     //////////////////////////////////////////////////////////////*/
 
-    const startSwapOrder = async (tokenAddress: string, amount: bigint) => {
+    const startSwapOrder = async (tokenAddress: string, usiTokenAddress: string, fromAmount: bigint, toAmount: bigint) => {
         setPendingSwap(true)
         if (!swapSuiToEth) {
 
+            console.log('[swapOrder] // STEP 0: Initializing swapOrder by user on Ethereum')
+
+            // Create an ethers BrowserProvider from the wallet client
+
+            //const src: EvmChain = await initChain(config.chain.evm, jsonRpcProvider)
+            const escrowFactory = process.env.NEXT_PUBLIC_SUI_ESCROW_FACTORY_ADDRESS
+            const resolver = process.env.NEXT_PUBLIC_SUI_RESOLVER_ADDRESS
+
+            console.log('[swapOrder] Escrow factory address (Factory Object Id)', escrowFactory)
+            console.log('[swapOrder] Resolver address(Factory Package Id)', resolver)
+
+            // STEP 0: Initializing swapOrder by user on Ethereum
+
+            // Get initial balance of user's token
+            // const initialBalance = await getBalanceEVMForToken(tokenAddress as `0x${string}`)//await chainUser.tokenBalance(tokenAddress as `0x${string}`)
+
+            //console.log('[swapOrder] User initialBalance for EVM token ', tokenAddress, initialBalance)
+            console.log('[swapOrder] // STEP 1: User creates cross-chain order with multiple fill capability')
+
+            // STEP 1: User creates cross-chain order with multiple fill capability
+
+            // Generate 11 secrets for multiple fills (in production, use crypto-secure random)
+            const secrets = Array.from({ length: 11 }).map(() => uint8ArrayToHex(randomBytes(32)))
+            const secretHashes = secrets.map((s) => Sdk.HashLock.hashSecret(s))
+            const leaves = Sdk.HashLock.getMerkleLeaves(secrets)
+
+
+            const preOrder: PreOrder = {
+                escrowFactory: escrowFactory as `0x${string}`,
+                maker: userAddress as `0x${string}`,
+                makingAmount: fromAmount,
+                takingAmount: toAmount,
+                makerAsset: tokenAddress,
+                takerAsset: usiTokenAddress || '0x0000000000000000000000000000000000000001', // Placeholder for Sui USDC
+                secret: secrets[0]!, // Use the first secret for multiple fills
+                srcChainId: 1,
+                dstChainId: 10,
+                srcTimestamp: BigInt(Date.now()), //BigInt((await jsonRpcProvider.getBlock('latest'))!.timestamp),
+                resolver: resolver as `0x${string}`,
+                allowMultipleFills: true,
+                secrets: secrets
+            }
+            // Create order with multiple fills enabled
+            const order = createLocalOrder(
+                preOrder.escrowFactory,
+                preOrder.maker,
+                preOrder.makingAmount,
+                preOrder.takingAmount,
+                preOrder.makerAsset,
+                preOrder.takerAsset,
+                preOrder.secret,
+                preOrder.srcChainId,
+                preOrder.dstChainId,
+                preOrder.srcTimestamp,
+                preOrder.resolver,
+                preOrder.allowMultipleFills,
+                preOrder.secrets
+            )
+            // STEP 2: User signs the order
+            const signature = await signOrderSui(order)
+
+            const orderHash = order.getOrderHash(chainId as number)
+
+
+            console.log('[swapOrder] Order', order)
+
+            // Create order with serialization data
+            const { order: serializedOrder, serializationData } = createOrderWithSerialization(
+                preOrder.escrowFactory,
+                preOrder.maker,
+                preOrder.makingAmount,
+                preOrder.takingAmount,
+                preOrder.makerAsset,
+                preOrder.takerAsset,
+                preOrder.secret,
+                preOrder.srcChainId,
+                preOrder.dstChainId,
+                preOrder.srcTimestamp,
+                preOrder.resolver,
+                preOrder.allowMultipleFills,
+                preOrder.secrets
+
+            )
+            // Serialize to JSON
+            const jsonOrder = orderToJson(serializedOrder, serializationData.originalSecret, serializationData.originalSecrets, preOrder.escrowFactory, preOrder.srcChainId, preOrder.dstChainId)
+
+            console.log('[swapOrder] Serialized order', jsonOrder)
+            console.log(`[swapOrder]`, `${chainId} Order signed by user`, orderHash)
+
+            return {
+                data: {
+                    fromTokenKey: tokenAddress,
+                    fromNetwork: 'sui',
+                    toTokenKey: usiTokenAddress || '0x0000000000000000000000000000000000000001',
+                    toNetwork: 'ethereum',
+                    signature: [signature],
+                    orderHash: [orderHash],
+                    secrets: secrets,
+                    jsonOrder: jsonOrder
+                }
+            }
+        } else {
+            // Initializing swapOrder by user on SUI
             console.log('[swapOrder] // STEP 0: Initializing swapOrder by user on Ethereum')
 
             // Create an ethers BrowserProvider from the wallet client
@@ -122,14 +233,14 @@ export function useSwapOrder() {
             const preOrder: PreOrder = {
                 escrowFactory: escrowFactory as `0x${string}`,
                 maker: userAddress as `0x${string}`,
-                makingAmount: parseUnits('100', 6),
-                takingAmount: parseUnits('99', 6),
-                makerAsset: config.chain.evm.tokens.USDC.address,
-                takerAsset: '0x0000000000000000000000000000000000000001', // Placeholder for Sui USDC
+                makingAmount: fromAmount,
+                takingAmount: toAmount,
+                makerAsset: tokenAddress,
+                takerAsset: usiTokenAddress || '0x0000000000000000000000000000000000000001', // Placeholder for Sui USDC
                 secret: secrets[0]!, // Use the first secret for multiple fills
                 srcChainId: 1,
                 dstChainId: 10,
-                srcTimestamp: BigInt((await jsonRpcProvider.getBlock('latest'))!.timestamp),
+                srcTimestamp: BigInt(Date.now()),
                 resolver: resolver as `0x${string}`,
                 allowMultipleFills: true,
                 secrets: secrets
@@ -182,9 +293,9 @@ export function useSwapOrder() {
 
             return {
                 data: {
-                    fromTokenKey: config.chain.evm.tokens.USDC.address,
-                    fromNetwork: 'ethereum',
-                    toTokenKey: '0x0000000000000000000000000000000000000001',
+                    fromTokenKey: tokenAddress,
+                    fromNetwork: 'sui',
+                    toTokenKey: usiTokenAddress || '0x0000000000000000000000000000000000000001',
                     toNetwork: 'sui',
                     signature: [signature],
                     orderHash: [orderHash],
@@ -192,8 +303,6 @@ export function useSwapOrder() {
                     jsonOrder: jsonOrder
                 }
             }
-        } else {
-            // Initializing swapOrder by user on SUI
 
         }
     }
@@ -238,6 +347,38 @@ export function useSwapOrder() {
             primaryType: 'Order',
             message: typedData.message
         })
+    }
+
+    async function signOrderSui(order: Sdk.CrossChainOrder): Promise<string> {
+
+        // Get the order data and hash
+        const orderData = order.build()
+        const orderHash = order.getOrderHash(10) // Assuming chainId 10 for Sui
+
+        // Create a deterministic message for signing
+        // We'll use the order hash as the primary identifier and add essential order data
+        const messageToSign = {
+            orderHash: orderHash,
+            maker: orderData.maker,
+            makingAmount: orderData.makingAmount.toString(),
+            takingAmount: orderData.takingAmount.toString(),
+            makerAsset: orderData.makerAsset,
+            takerAsset: orderData.takerAsset,
+            salt: orderData.salt,
+            receiver: orderData.receiver,
+            multipleFillsAllowed: order.multipleFillsAllowed.toString(),
+            srcChainId: 10, // Sui chain ID
+            dstChainId: 1   // Ethereum chain ID
+        }
+
+        // Create a deterministic string representation for signing
+        const messageString = JSON.stringify(messageToSign, Object.keys(messageToSign).sort())
+        const messageBytes = new TextEncoder().encode(messageString)
+
+        // Sign the message using Sui wallet
+        const signatureResult = await signSuiMessage({ message: messageBytes })
+
+        return signatureResult.signature
     }
 
     // TODO: Implement helper functions getting balance for SUI

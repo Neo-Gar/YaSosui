@@ -180,7 +180,9 @@ export default function Swap() {
 
       const result = await startSwapOrder(
         fromTokenKey,
+        toTokenKey,
         parseEther(values.fromAmount),
+        parseEther(values.toAmount)
       );
       console.log(
         "/////////////////////// Swap order started! ///////////////////////",
@@ -515,26 +517,25 @@ export default function Swap() {
                   whileHover={{
                     scale:
                       isValid &&
-                      values.fromAmount &&
-                      !createOrderMutation.isPending
+                        values.fromAmount &&
+                        !createOrderMutation.isPending
                         ? 1.02
                         : 1,
                   }}
                   whileTap={{
                     scale:
                       isValid &&
-                      values.fromAmount &&
-                      !createOrderMutation.isPending
+                        values.fromAmount &&
+                        !createOrderMutation.isPending
                         ? 0.98
                         : 1,
                   }}
-                  className={`w-full rounded-lg py-3 font-medium text-white shadow-lg transition-all ${
-                    isValid &&
+                  className={`w-full rounded-lg py-3 font-medium text-white shadow-lg transition-all ${isValid &&
                     values.fromAmount &&
                     !createOrderMutation.isPending
-                      ? "bg-gradient-to-r from-[#8F81F8] to-[#7C6EF8] hover:from-[#7C6EF8] hover:to-[#6B5EF7]"
-                      : "cursor-not-allowed bg-gray-300"
-                  }`}
+                    ? "bg-gradient-to-r from-[#8F81F8] to-[#7C6EF8] hover:from-[#7C6EF8] hover:to-[#6B5EF7]"
+                    : "cursor-not-allowed bg-gray-300"
+                    }`}
                 >
                   {createOrderMutation.isPending
                     ? "Creating Order..."
