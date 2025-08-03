@@ -49,20 +49,20 @@ interface ICustomEscrowFactory {
      * @notice Creates a new source escrow contract.
      * @param orderHash The hash of the order.
      * @param maker The address of the maker.
-     * @param token The token address.
      * @param makerAsset The maker's asset address.
      * @param makingAmount The amount of tokens to be filled.
      * @param safetyDeposit The safety deposit amount in native tokens.
      * @param chainId The chain ID.
+     * @param secretHashlock The hashlock for the secret.
      */
     function deploySrcEscrow(
         bytes32 orderHash,
         address maker,
-        address token,
         address makerAsset,
         uint256 makingAmount,
         uint256 safetyDeposit,
-        uint256 chainId
+        uint256 chainId,
+        bytes32 secretHashlock
     ) external payable;
 
     /**
@@ -73,14 +73,14 @@ interface ICustomEscrowFactory {
      * @param amount The amount of tokens to be deposited.
      * @param safetyDeposit The safety deposit amount in native tokens.
      * @param orderHashlock The hashlock for the order.
-     * @param hashlock The hashlock for the escrow.
+     * @param secretHashlock The hashlock for the secret.
      */
     function deployDstEscrow(
         address token,
         uint256 amount,
         uint256 safetyDeposit,
         bytes32 orderHashlock,
-        bytes32 hashlock
+        bytes32 secretHashlock
     ) external payable;
 
     /**

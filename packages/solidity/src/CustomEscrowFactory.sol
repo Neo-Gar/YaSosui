@@ -36,7 +36,6 @@ contract CustomEscrowFactory is ICustomEscrowFactory {
     function deploySrcEscrow(
         bytes32 orderHash,
         address maker,
-        address token,
         address makerAsset,
         uint256 makingAmount,
         uint256 safetyDeposit,
@@ -46,7 +45,7 @@ contract CustomEscrowFactory is ICustomEscrowFactory {
         DstImmutablesComplement memory immutablesComplement = DstImmutablesComplement({
             maker: maker,
             amount: makingAmount,
-            token: token,
+            token: makerAsset,
             safetyDeposit: safetyDeposit,
             chainId: chainId
         });
@@ -59,11 +58,14 @@ contract CustomEscrowFactory is ICustomEscrowFactory {
 
         CustomEscrowSrc(escrow).setHashlock(secretHashlock);
 
-        if (token != address(0)) {
-            IERC20(token).safeTransferFrom(address(this), escrow, makingAmount);
+        if (makerAsset != address(0)) {
+            IERC20(makerAsset).safeTransferFrom(address(maker), escrow, makingAmount);
         }
 
-        if (escrow.balance < safetyDeposit || IERC20(makerAsset).balanceOf(escrow) < makingAmount) {
+        if (
+            escrow.balance < safetyDeposit
+                || (makerAsset != address(0) && IERC20(makerAsset).balanceOf(escrow) < makingAmount)
+        ) {
             revert InsufficientEscrowBalance();
         }
     }
@@ -76,7 +78,7 @@ contract CustomEscrowFactory is ICustomEscrowFactory {
      * @param amount The amount of tokens to be deposited.
      * @param safetyDeposit The safety deposit amount in native tokens.
      * @param orderHashlock The hashlock for the order.
-     * @param hashlock The hashlock for the escrow.
+     * @param secretHashlock The hashlock for the secret.
      */
     function deployDstEscrow(
         address token,

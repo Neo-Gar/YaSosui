@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {TestEscrowFactory, IERC20} from "../contracts/src/TestEscrowFactory.sol";
-import {Resolver, IOrderMixin} from "../contracts/src/Resolver.sol";
+import {TestEscrowFactory, IERC20} from "../src/TestEscrowFactory.sol";
+import {Resolver, IOrderMixin} from "../src/Resolver.sol";
 import {Script} from "forge-std/Script.sol";
 
 contract DeployTestEscrowFactory is Script {

@@ -1,135 +1,142 @@
-# Turborepo starter
+# ETHGlobal YASOSUI Swap
 
-This Turborepo starter is maintained by the Turborepo core team.
+A cross-chain atomic swap application enabling secure token exchanges between Ethereum and Sui networks.
 
-## Using this example
+## Overview
 
-Run the following command:
+This project implements a complete cross-chain swap solution with:
+- **Solidity contracts** for Ethereum escrow management
+- **Move contracts** for Sui escrow management  
+- **Next.js web interface** for user interactions
+- **Cross-chain resolver** for coordinating swaps
 
-```sh
-npx create-turbo@latest
+## Architecture
+
+### Smart Contracts
+
+#### Ethereum (Solidity)
+- **CustomEscrowFactory**: Factory for deploying escrow contracts
+- **CustomBaseEscrow**: Base escrow functionality with hashlock validation
+- **CustomEscrowSrc**: Source chain escrow for maker deposits
+- **CustomEscrowDst**: Destination chain escrow for taker deposits
+- **Resolver**: Cross-chain coordination and order management
+
+#### Sui (Move)
+- **EscrowFactory**: Sui-side escrow factory
+- **Escrow**: Individual escrow instances with withdrawal/cancellation logic
+
+### Web Application
+- **Next.js frontend** with TypeScript and Tailwind CSS
+- **Wallet integration** for both Ethereum and Sui
+- **Real-time order tracking** and swap management
+- **Cross-chain SDK integration** for seamless swaps
+
+## Quick Start
+
+### Prerequisites
+- Node.js 18+
+- pnpm package manager
+- Sui CLI
+- Foundry (for Solidity development)
+
+### Installation
+
+```bash
+# Clone the repository
+git clone <repository-url>
+cd ethglobal-yasosui-swap
+
+# Install dependencies
+pnpm install
+
+# Set up environment variables
+cp apps/web/.env.example apps/web/.env
+# Edit .env with your configuration
 ```
 
-## What's inside?
+### Development
 
-This Turborepo includes the following packages/apps:
+```bash
+# Start the development server
+pnpm dev
 
-### Apps and Packages
+# Build all packages
+pnpm build
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+# Run tests
+pnpm test
 ```
 
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+### Contract Deployment
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
+#### Ethereum (Sepolia)
+```bash
+cd packages/solidity
+forge script script/DeployCustomEscrowFactory.s.sol --rpc-url <sepolia-rpc> --private-key <your-key>
 ```
 
-### Develop
-
-To develop all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
+#### Sui (Testnet)
+```bash
+cd packages/move
+sui move build
+sui client publish --gas-budget 10000000 --network testnet
 ```
 
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+## Project Structure
 
 ```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
+ethglobal-yasosui-swap/
+├── apps/
+│   └── web/                 # Next.js web application
+├── packages/
+│   ├── solidity/            # Ethereum smart contracts
+│   └── move/               # Sui smart contracts
+├── README.md
+└── package.json
 ```
 
-### Remote Caching
+## Deployed Contracts
 
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
+### Ethereum (Sepolia Testnet)
+- **CustomEscrowFactory**: `0xe9754c50880db91939814beb8b758e6b68709cd0`
+- **Resolver**: `0x4f38502d422d500f4a53294dd0074ed47319065d`
+- **CustomBaseEscrow**: `0x5bbe65544ce4af14a3f1912e46e8502ae593c4dc`
+- **CustomEscrowDst**: `0xf3592b3bf56921fb6513fb28ccefa47872371f4e`
 
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
+### Sui (Testnet)
+- **EscrowFactory**: Deployed package ID (update in .env)
 
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
+## Features
 
-```
-cd my-turborepo
+- 🔄 **Cross-chain atomic swaps** between Ethereum and Sui
+- 🔒 **Hashlock-based security** with time-locked escrows
+- 💰 **Support for ERC20 and native tokens**
+- 🎯 **Deterministic escrow addresses** for gas optimization
+- 📱 **Modern web interface** with wallet integration
+- ⚡ **Real-time order tracking** and status updates
 
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
+## Security
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
-```
+- Hashlock verification using SHA3-256
+- Time-locked cancellation mechanisms
+- Deterministic address generation
+- Comprehensive error handling
+- Event emission for off-chain tracking
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+## Contributing
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
+## License
 
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
-```
+[Add your license here]
 
-## Useful Links
+## Links
 
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+- [ETHGlobal](https://ethglobal.com/)
+- [Sui Documentation](https://docs.sui.io/)
+- [1inch Cross-chain SDK](https://github.com/1inch/cross-chain-sdk)

@@ -1,9 +1,9 @@
 [profile.default]
 solc = "0.8.23"
-src = 'contracts/src'
+src = 'src'
 out = 'dist/contracts'
-test = 'contracts/test'
-libs = ['contracts/lib']
+test = 'test'
+libs = ['lib']
 
 via_ir = true
 optimizer_runs = 1000000
@@ -14,6 +14,6 @@ fs_permissions = [{ access = "read", path = "dist/contracts" }, { access = "read
 extra_output = ['storageLayout']
 
 remappings = [
-    "@openzeppelin/contracts/=cconstacts/lib/openzeppelin-contracts/contracts/",
+    "@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/",
     "forge-std/=lib/forge-std/src/"
 ]

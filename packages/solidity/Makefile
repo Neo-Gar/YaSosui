@@ -1,6 +1,6 @@
 -include .env
 
-install:; forge install foundry-rs/forge-std
+install:; forge install foundry-rs/forge-std && forge install OpenZeppelin/openzeppelin-contracts@v5.4.0
 
 .PHONY: all test clean deploy fund install snapshot format anvil 
 

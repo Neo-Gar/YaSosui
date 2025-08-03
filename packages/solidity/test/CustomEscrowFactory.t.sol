@@ -66,6 +66,7 @@ contract CustomEscrowFactoryTest is Test {
 
     bytes32 public constant ORDER_HASH = keccak256(abi.encodePacked("test_order"));
     bytes32 public constant HASHLOCK = keccak256(abi.encodePacked("test_hashlock"));
+    bytes32 public constant SECRET_HASHLOCK = keccak256(abi.encodePacked("test_secret_hashlock"));
 
     uint256 public constant MAKING_AMOUNT = 1000;
     uint256 public constant SAFETY_DEPOSIT = 100;
@@ -81,6 +82,10 @@ contract CustomEscrowFactoryTest is Test {
         mockAsset.mint(alice, 10000);
         mockToken.mint(bob, 10000);
         mockAsset.mint(bob, 10000);
+
+        // Give ETH to test addresses
+        vm.deal(alice, 10000 ether);
+        vm.deal(bob, 10000 ether);
 
         vm.label(address(factory), "Factory");
         vm.label(address(mockToken), "MockToken");
@@ -141,30 +146,119 @@ contract CustomEscrowFactoryTest is Test {
         assertTrue(srcImpl != dstImpl, "Src and dst implementations should be different");
     }
 
-    // ========== Edge Cases ==========
+    // ========== Deploy Src Escrow Tests ==========
+
+    function test_DeploySrcEscrow_Success() public {
+        vm.startPrank(alice);
+
+        // Alice needs to have tokens and approve them to the factory
+        mockToken.transfer(alice, MAKING_AMOUNT);
+        mockToken.approve(address(factory), MAKING_AMOUNT);
+
+        vm.expectEmit(true, true, true, true);
+        ICustomEscrowFactory.DstImmutablesComplement memory expectedComplement = ICustomEscrowFactory
+            .DstImmutablesComplement({
+            maker: alice,
+            amount: MAKING_AMOUNT,
+            token: address(mockToken),
+            safetyDeposit: SAFETY_DEPOSIT,
+            chainId: CHAIN_ID
+        });
+        emit ICustomEscrowFactory.SrcEscrowCreated(expectedComplement);
+
+        factory.deploySrcEscrow{value: SAFETY_DEPOSIT}(
+            ORDER_HASH, alice, address(mockToken), MAKING_AMOUNT, SAFETY_DEPOSIT, CHAIN_ID, SECRET_HASHLOCK
+        );
+
+        address escrow = factory.addressOfEscrowSrc(ORDER_HASH);
+        assertTrue(escrow != address(0), "Escrow should be deployed");
+
+        vm.stopPrank();
+    }
 
     function test_DeploySrcEscrow_ZeroSafetyDeposit() public {
         vm.startPrank(alice);
 
-        mockAsset.transfer(alice, MAKING_AMOUNT);
-        mockAsset.approve(address(factory), MAKING_AMOUNT);
+        // Alice needs to have tokens and approve them to the factory
+        mockToken.transfer(alice, MAKING_AMOUNT);
+        mockToken.approve(address(factory), MAKING_AMOUNT);
 
-        // Transfer tokens to escrow
-        address escrowAddress = factory.addressOfEscrowSrc(ORDER_HASH);
-        mockAsset.transfer(escrowAddress, MAKING_AMOUNT);
+        vm.expectEmit(true, true, true, true);
+        ICustomEscrowFactory.DstImmutablesComplement memory expectedComplement = ICustomEscrowFactory
+            .DstImmutablesComplement({
+            maker: alice,
+            amount: MAKING_AMOUNT,
+            token: address(mockToken),
+            safetyDeposit: 0,
+            chainId: CHAIN_ID
+        });
+        emit ICustomEscrowFactory.SrcEscrowCreated(expectedComplement);
 
         factory.deploySrcEscrow{value: 0}(
             ORDER_HASH,
             alice,
             address(mockToken),
-            address(mockAsset),
             MAKING_AMOUNT,
             0, // Zero safety deposit
-            CHAIN_ID
+            CHAIN_ID,
+            SECRET_HASHLOCK
         );
 
         address escrow = factory.addressOfEscrowSrc(ORDER_HASH);
         assertTrue(escrow != address(0), "Escrow should be deployed even with zero safety deposit");
+
+        vm.stopPrank();
+    }
+
+    function test_DeploySrcEscrow_NativeToken() public {
+        vm.startPrank(alice);
+
+        // For native token, the balance check should pass since we're sending the safety deposit
+        // and for native token (address(0)), the balanceOf check is skipped
+        vm.expectEmit(true, true, true, true);
+        ICustomEscrowFactory.DstImmutablesComplement memory expectedComplement = ICustomEscrowFactory
+            .DstImmutablesComplement({
+            maker: alice,
+            amount: MAKING_AMOUNT,
+            token: address(0), // Native token
+            safetyDeposit: SAFETY_DEPOSIT,
+            chainId: CHAIN_ID
+        });
+        emit ICustomEscrowFactory.SrcEscrowCreated(expectedComplement);
+
+        factory.deploySrcEscrow{value: SAFETY_DEPOSIT}(
+            ORDER_HASH,
+            alice,
+            address(0), // Native token
+            MAKING_AMOUNT,
+            SAFETY_DEPOSIT,
+            CHAIN_ID,
+            SECRET_HASHLOCK
+        );
+
+        address escrow = factory.addressOfEscrowSrc(ORDER_HASH);
+        assertTrue(escrow != address(0), "Escrow should be deployed for native token");
+
+        vm.stopPrank();
+    }
+
+    // ========== Deploy Dst Escrow Tests ==========
+
+    function test_DeployDstEscrow_Success() public {
+        vm.startPrank(bob);
+
+        mockToken.transfer(bob, MAKING_AMOUNT);
+        mockToken.approve(address(factory), MAKING_AMOUNT);
+
+        vm.expectEmit(true, true, true, true);
+        emit ICustomEscrowFactory.DstEscrowCreated(factory.addressOfEscrowDst(ORDER_HASH), ORDER_HASH, bob);
+
+        factory.deployDstEscrow{value: SAFETY_DEPOSIT}(
+            address(mockToken), MAKING_AMOUNT, SAFETY_DEPOSIT, ORDER_HASH, SECRET_HASHLOCK
+        );
+
+        address escrow = factory.addressOfEscrowDst(ORDER_HASH);
+        assertTrue(escrow != address(0), "Escrow should be deployed");
 
         vm.stopPrank();
     }
@@ -175,16 +269,86 @@ contract CustomEscrowFactoryTest is Test {
         mockToken.transfer(bob, MAKING_AMOUNT);
         mockToken.approve(address(factory), MAKING_AMOUNT);
 
-        factory.deployDstEscrow{value: 0}(
-            address(mockToken),
-            MAKING_AMOUNT,
-            0, // Zero safety deposit
-            ORDER_HASH,
-            HASHLOCK
-        );
+        vm.expectEmit(true, true, true, true);
+        emit ICustomEscrowFactory.DstEscrowCreated(factory.addressOfEscrowDst(ORDER_HASH), ORDER_HASH, bob);
+
+        factory.deployDstEscrow{value: 0}(address(mockToken), MAKING_AMOUNT, 0, ORDER_HASH, SECRET_HASHLOCK);
 
         address escrow = factory.addressOfEscrowDst(ORDER_HASH);
         assertTrue(escrow != address(0), "Escrow should be deployed even with zero safety deposit");
+
+        vm.stopPrank();
+    }
+
+    function test_DeployDstEscrow_NativeToken() public {
+        vm.startPrank(bob);
+
+        // For native token, the amount should be included in the value
+        uint256 nativeAmount = SAFETY_DEPOSIT + MAKING_AMOUNT;
+
+        vm.expectEmit(true, true, true, true);
+        emit ICustomEscrowFactory.DstEscrowCreated(factory.addressOfEscrowDst(ORDER_HASH), ORDER_HASH, bob);
+
+        factory.deployDstEscrow{value: nativeAmount}(
+            address(0), // Native token
+            MAKING_AMOUNT,
+            SAFETY_DEPOSIT,
+            ORDER_HASH,
+            SECRET_HASHLOCK
+        );
+
+        address escrow = factory.addressOfEscrowDst(ORDER_HASH);
+        assertTrue(escrow != address(0), "Escrow should be deployed for native token");
+
+        vm.stopPrank();
+    }
+
+    // ========== Error Tests ==========
+
+    function test_DeploySrcEscrow_InsufficientBalance() public {
+        vm.startPrank(alice);
+
+        // Alice doesn't have any tokens and doesn't approve any tokens
+        // This should cause the safeTransferFrom to fail
+
+        vm.expectRevert(); // safeTransferFrom will revert with SafeTransferFromFailed
+
+        factory.deploySrcEscrow{value: SAFETY_DEPOSIT}(
+            ORDER_HASH, alice, address(mockToken), MAKING_AMOUNT, SAFETY_DEPOSIT, CHAIN_ID, SECRET_HASHLOCK
+        );
+
+        vm.stopPrank();
+    }
+
+    function test_DeployDstEscrow_InsufficientValue() public {
+        vm.startPrank(bob);
+
+        mockToken.transfer(bob, MAKING_AMOUNT);
+        mockToken.approve(address(factory), MAKING_AMOUNT);
+
+        vm.expectRevert(ICustomEscrowFactory.InsufficientEscrowBalance.selector);
+
+        factory.deployDstEscrow{value: SAFETY_DEPOSIT - 1}(
+            address(mockToken), MAKING_AMOUNT, SAFETY_DEPOSIT, ORDER_HASH, SECRET_HASHLOCK
+        );
+
+        vm.stopPrank();
+    }
+
+    function test_DeployDstEscrow_NativeToken_InsufficientValue() public {
+        vm.startPrank(bob);
+
+        uint256 nativeAmount = SAFETY_DEPOSIT + MAKING_AMOUNT;
+
+        vm.expectRevert(ICustomEscrowFactory.InsufficientEscrowBalance.selector);
+
+        factory.deployDstEscrow{value: nativeAmount - 1}(
+            address(0), // Native token
+            MAKING_AMOUNT,
+            SAFETY_DEPOSIT,
+            ORDER_HASH,
+            SECRET_HASHLOCK
+        );
 
         vm.stopPrank();
     }

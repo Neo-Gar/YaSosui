@@ -1,6 +1,9 @@
 [submodule "packages/solidity/contracts/lib/forge-std"]
-	path = packages/solidity/contracts/lib/forge-std
+	path = packages/solidity/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
 [submodule "packages/solidity/lib/forge-std"]
 	path = packages/solidity/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
+[submodule "packages/solidity/lib/openzeppelin-contracts"]
+	path = packages/solidity/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts
